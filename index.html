@@ -959,6 +959,15 @@ async function pollCommandes() {
       });
       STATE.commandes = res.commandes;
       STATE.prevCommandeIds = freshIds;
+      // DEBUG
+      const ouv = res.commandes.filter(c => c.statut === 'ouverte');
+      if (ouv.length > 0) {
+        const lignes = getLignes(ouv[0]);
+        dbg('CMD[0] statut=' + ouv[0].statut + ' lignes=' + lignes.length);
+        if (lignes.length > 0) dbg('LIGNE[0] station=' + lignes[0].station + ' statut=' + lignes[0].statut + ' nom=' + lignes[0].nom);
+      } else {
+        dbg('Pas de commandes ouvertes dans le poll');
+      }
       if (hasNew) playNewOrder();
       if (hasNewClient) playNewOrder();
       renderCurrentView();
