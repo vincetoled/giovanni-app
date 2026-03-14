@@ -530,11 +530,9 @@ h1,h2,h3{font-family:'Cormorant Garamond',serif;font-weight:600}
 <div id="banner-offline" class="banner-offline">⚠ Connexion perdue — Vérifiez votre Wi-Fi</div>
 
 <!-- Debug panel -->
-<div style="position:fixed;bottom:60px;left:0;right:0;z-index:9999;">
-  <button onclick="toggleDebug()" style="background:#222;color:#0f0;font-size:11px;padding:3px 8px;border:none;width:100%;text-align:left;">🐛 DEBUG</button>
-  <div id="debug-wrap" style="display:block;">
-    <div id="debug-panel" style="background:#111;color:#0f0;font-family:monospace;font-size:10px;max-height:180px;overflow-y:auto;padding:4px;"></div>
-  </div>
+<button onclick="toggleDebug()" style="position:fixed;top:6px;right:6px;z-index:10000;background:#222;color:#0f0;font-size:10px;padding:2px 6px;border:1px solid #0f0;border-radius:4px;opacity:0.7;">🐛</button>
+<div id="debug-wrap" style="position:fixed;top:30px;right:0;width:320px;z-index:10000;display:none;">
+  <div id="debug-panel" style="background:#111;color:#0f0;font-family:monospace;font-size:10px;max-height:220px;overflow-y:auto;padding:4px;border:1px solid #0f0;"></div>
 </div>
 
 <!-- Toast container -->
@@ -964,11 +962,14 @@ async function pollCommandes() {
       // DEBUG
       const ouv = res.commandes.filter(c => c.statut === 'ouverte');
       if (ouv.length > 0) {
-        const lignes = getLignes(ouv[0]);
-        dbg('CMD[0] statut=' + ouv[0].statut + ' lignes=' + lignes.length);
+        const c0 = ouv[0];
+        dbg('CMD[0] table=' + c0.table + ' statut=' + c0.statut);
+        dbg('RAW lignes type=' + typeof c0.lignes + ' val=' + String(c0.lignes).substr(0,150));
+        const lignes = getLignes(c0);
+        dbg('PARSED lignes.length=' + lignes.length);
         if (lignes.length > 0) dbg('LIGNE[0] station=' + lignes[0].station + ' statut=' + lignes[0].statut + ' nom=' + lignes[0].nom);
       } else {
-        dbg('Pas de commandes ouvertes dans le poll');
+        dbg('Pas de commandes ouvertes dans le poll. Total=' + res.commandes.length);
       }
       if (hasNew) playNewOrder();
       if (hasNewClient) playNewOrder();
