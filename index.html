@@ -529,6 +529,12 @@ h1,h2,h3{font-family:'Cormorant Garamond',serif;font-weight:600}
 <!-- Banner offline -->
 <div id="banner-offline" class="banner-offline">⚠ Connexion perdue — Vérifiez votre Wi-Fi</div>
 
+<!-- Debug panel -->
+<div id="debug-wrap" style="position:fixed;bottom:60px;left:0;right:0;z-index:9999;display:block;">
+  <button onclick="toggleDebug()" style="background:#222;color:#0f0;font-size:11px;padding:3px 8px;border:none;width:100%;text-align:left;">🐛 DEBUG (appuyer pour masquer)</button>
+  <div id="debug-panel" style="background:#111;color:#0f0;font-family:monospace;font-size:10px;max-height:180px;overflow-y:auto;padding:4px;"></div>
+</div>
+
 <!-- Toast container -->
 <div id="toast-container"></div>
 
@@ -805,17 +811,41 @@ async function requestWakeLock() {
 // ============================================================
 // API FETCH
 // ============================================================
+// ============================================================
+// DEBUG PANEL
+// ============================================================
+function dbg(msg, data) {
+  const ts = new Date().toISOString().substr(11,12);
+  const line = `[${ts}] ${msg}` + (data !== undefined ? ' → ' + JSON.stringify(data).substr(0,200) : '');
+  console.log(line);
+  const panel = document.getElementById('debug-panel');
+  if (panel) {
+    const el = document.createElement('div');
+    el.textContent = line;
+    panel.prepend(el);
+    if (panel.children.length > 30) panel.lastChild.remove();
+  }
+}
+function toggleDebug() {
+  const wrap = document.getElementById('debug-wrap');
+  if (wrap) wrap.style.display = wrap.style.display === 'none' ? 'block' : 'none';
+}
+
 async function apiFetch(input, options = {}, timeout = CONFIG.FETCH_TIMEOUT) {
   const controller = new AbortController();
   const tid = setTimeout(() => controller.abort(), timeout);
+  dbg('FETCH ' + (options.method || 'GET'), input.toString().substr(0,80));
   try {
     const res = await fetch(input, { ...options, signal: controller.signal });
     clearTimeout(tid);
+    dbg('HTTP ' + res.status, res.url.substr(0,80));
     const text = await res.text();
+    dbg('BODY', text.substr(0,200));
     try { return JSON.parse(text); }
     catch(e) { return { error: 'JSON invalide: ' + text.substr(0,100) }; }
   } catch(e) {
     clearTimeout(tid);
+    dbg('ERROR', e.message);
     throw e;
   }
 }
