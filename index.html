@@ -1857,6 +1857,19 @@ async function toggleRupture(menuId) {
 // ============================================================
 // VUE ADMIN
 // ============================================================
+async function resetCommandesTest() {
+  if (!confirm('Vider TOUTES les commandes ? (action irréversible)')) return;
+  try {
+    const res = await enqueueWrite('resetCommandes', {});
+    if (res && res.success) {
+      showToast('Commandes vidées (' + (res.deleted||0) + ' supprimées)', 'success');
+      await pollCommandes();
+    } else {
+      showToast('Erreur: ' + (res?.error || 'inconnue'), 'error');
+    }
+  } catch(e) { showToast('Connexion perdue', 'error'); }
+}
+
 function renderAdmin() {
   const el = document.getElementById('admin-content');
   if (!el) return;
@@ -1870,6 +1883,12 @@ function renderAdmin() {
   const caToday = paidToday.reduce((s,c) => s + (parseFloat(c.total)||0), 0);
 
   let html = `
+    <div class="admin-section">
+      <div class="admin-section-title">🧪 Tests & Maintenance</div>
+      <button class="btn" style="background:#c0392b;color:#fff;width:100%;padding:12px;font-size:14px;margin-bottom:8px"
+        onclick="resetCommandesTest()">🗑 Vider toutes les commandes (test)</button>
+    </div>
+
     <div class="admin-section">
       <div class="admin-section-title">Tableau de bord</div>
       <div class="stat-grid">
