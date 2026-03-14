@@ -1,0 +1,2186 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1A1916">
+<title>Giovanni — Service</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   VARIABLES & RESET
+   ============================================================ */
+:root {
+  --or: #C9A84C;
+  --or-light: #E2C47A;
+  --terre: #C0522A;
+  --bg: #1A1916;
+  --bg-card: #252320;
+  --bg-nav: #161513;
+  --bg-modal: #1E1C19;
+  --bg-input: #2E2C28;
+  --text: #F0EBE0;
+  --text-muted: #8B8680;
+  --border: rgba(201,168,76,0.15);
+  --border-active: rgba(201,168,76,0.5);
+  --green: #4CAF7D;
+  --orange: #E09D42;
+  --red: #D94F4F;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --nav-h: 60px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px}
+button{font-family:'DM Sans',sans-serif;cursor:pointer;border:none;background:none;color:inherit}
+input,select,textarea{font-family:'DM Sans',sans-serif;color:var(--text);background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 12px;font-size:14px;width:100%;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--or)}
+select option{background:var(--bg-card)}
+h1,h2,h3{font-family:'Cormorant Garamond',serif;font-weight:600}
+
+/* ============================================================
+   LAYOUT
+   ============================================================ */
+.view{
+  position:fixed;inset:0 0 calc(var(--nav-h) + var(--safe-bottom)) 0;
+  overflow-y:auto;overflow-x:hidden;
+  display:none;flex-direction:column;
+  -webkit-overflow-scrolling:touch;
+}
+.view.active{display:flex}
+.view-header{
+  padding:16px 16px 12px;
+  background:var(--bg);
+  position:sticky;top:0;z-index:10;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.view-header h1{font-size:22px;color:var(--or);letter-spacing:.5px}
+.view-content{flex:1;padding:12px 12px calc(12px + var(--safe-bottom));min-height:0}
+
+/* ============================================================
+   NAV BOTTOM
+   ============================================================ */
+.nav-bottom{
+  position:fixed;bottom:0;left:0;right:0;
+  height:calc(var(--nav-h) + var(--safe-bottom));
+  padding-bottom:var(--safe-bottom);
+  background:var(--bg-nav);
+  border-top:1px solid var(--border);
+  display:grid;grid-template-columns:repeat(4,1fr);
+  z-index:100;
+}
+.nav-btn{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:3px;padding:6px 4px;
+  color:var(--text-muted);transition:color .2s;
+  position:relative;
+}
+.nav-btn.active{color:var(--or)}
+.nav-btn .nav-icon{font-size:20px;line-height:1}
+.nav-btn .nav-label{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.5px}
+.nav-badge{
+  position:absolute;top:4px;right:calc(50% - 18px);
+  background:var(--terre);color:#fff;
+  font-size:10px;font-weight:700;
+  min-width:16px;height:16px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  padding:0 3px;
+}
+.connexion-dot{
+  position:absolute;top:8px;right:8px;
+  width:8px;height:8px;border-radius:50%;
+  background:var(--green);
+  transition:background .5s;
+}
+.connexion-dot.offline{background:var(--terre)}
+
+/* ============================================================
+   BANNER OFFLINE
+   ============================================================ */
+.banner-offline{
+  position:fixed;top:0;left:0;right:0;z-index:200;
+  background:var(--terre);color:#fff;
+  padding:10px 16px;text-align:center;
+  font-size:13px;font-weight:500;
+  transform:translateY(-100%);transition:transform .3s;
+}
+.banner-offline.visible{transform:translateY(0)}
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+#toast-container{
+  position:fixed;top:16px;left:50%;transform:translateX(-50%);
+  z-index:300;display:flex;flex-direction:column;gap:8px;
+  pointer-events:none;width:calc(100% - 32px);max-width:360px;
+}
+.toast{
+  background:var(--bg-card);border:1px solid var(--border);
+  padding:10px 16px;border-radius:var(--radius);
+  font-size:13px;text-align:center;
+  opacity:0;animation:toastIn .3s forwards;
+}
+.toast.success{border-color:var(--green);color:var(--green)}
+.toast.error{border-color:var(--terre);color:var(--terre)}
+.toast.warning{border-color:var(--orange);color:var(--orange)}
+@keyframes toastIn{to{opacity:1}}
+
+/* ============================================================
+   CARDS GENERIQUES
+   ============================================================ */
+.card{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius);padding:12px;
+  transition:border-color .2s;
+}
+.card.highlight{border-color:var(--or)}
+
+/* ============================================================
+   BADGES
+   ============================================================ */
+.badge{
+  display:inline-flex;align-items:center;
+  padding:2px 8px;border-radius:20px;
+  font-size:11px;font-weight:600;letter-spacing:.5px;
+  text-transform:uppercase;
+}
+.badge-vip{background:rgba(201,168,76,.2);color:var(--or);border:1px solid var(--or)}
+.badge-brouillon{background:rgba(139,134,128,.15);color:var(--text-muted);border:1px solid var(--text-muted)}
+.badge-client{background:rgba(224,157,66,.2);color:var(--orange);border:1px solid var(--orange)}
+.badge-pret{background:rgba(76,175,125,.2);color:var(--green);border:1px solid var(--green)}
+.badge-pret-all{
+  background:var(--green);color:#fff;
+  padding:4px 12px;font-size:12px;font-weight:700;
+  animation:pulse-green 1s ease-in-out infinite;
+}
+@keyframes pulse-green{0%,100%{opacity:1}50%{opacity:.7}}
+@keyframes pulse-orange{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+
+/* ============================================================
+   VUE SERVICE — GRILLE TABLES
+   ============================================================ */
+.tables-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+  gap:10px;
+}
+.table-card{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius);padding:12px;
+  cursor:pointer;position:relative;
+  transition:border-color .2s,transform .1s;
+  min-height:90px;
+  display:flex;flex-direction:column;gap:6px;
+}
+.table-card:active{transform:scale(.97)}
+.table-card.has-order{border-color:rgba(201,168,76,.4)}
+.table-card.pret-all{border-color:var(--green)}
+.table-card.has-client-demand{border-color:var(--orange);animation:pulse-orange 1.5s ease-in-out infinite}
+.table-card.locked::after{
+  content:'✏️';position:absolute;top:6px;right:8px;font-size:12px;
+}
+.table-num{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:600;color:var(--or);line-height:1}
+.table-info{font-size:11px;color:var(--text-muted)}
+.table-badges{display:flex;flex-wrap:wrap;gap:4px;margin-top:auto}
+.table-timer{font-size:11px;font-weight:600}
+.table-timer.green{color:var(--green)}
+.table-timer.orange{color:var(--orange)}
+.table-timer.red{color:var(--red)}
+.btn-new-table{
+  background:rgba(201,168,76,.1);border:1px dashed var(--border-active);
+  border-radius:var(--radius);padding:12px;
+  cursor:pointer;color:var(--or);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  min-height:90px;font-size:13px;transition:background .2s;
+}
+.btn-new-table:active{background:rgba(201,168,76,.2)}
+.btn-new-table .plus{font-size:28px;line-height:1}
+.section-title{
+  font-family:'Cormorant Garamond',serif;font-size:16px;color:var(--or);
+  padding:12px 0 8px;letter-spacing:.5px;
+}
+
+/* ============================================================
+   MODAL
+   ============================================================ */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.7);
+  z-index:150;display:none;align-items:flex-end;
+  backdrop-filter:blur(2px);
+}
+.modal-overlay.active{display:flex}
+.modal-sheet{
+  background:var(--bg-modal);width:100%;
+  border-radius:var(--radius) var(--radius) 0 0;
+  max-height:92vh;display:flex;flex-direction:column;
+  padding-bottom:var(--safe-bottom);
+}
+.modal-handle{
+  width:40px;height:4px;background:var(--border-active);
+  border-radius:2px;margin:10px auto 0;flex-shrink:0;
+}
+.modal-header{
+  padding:16px 16px 12px;display:flex;align-items:center;
+  justify-content:space-between;border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.modal-header h2{font-size:18px;color:var(--or)}
+.modal-close{
+  width:32px;height:32px;border-radius:50%;
+  background:rgba(255,255,255,.07);
+  display:flex;align-items:center;justify-content:center;font-size:18px;
+}
+.modal-body{flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch}
+.modal-footer{
+  padding:12px 16px;border-top:1px solid var(--border);
+  display:flex;gap:8px;flex-shrink:0;
+}
+
+/* ============================================================
+   MODAL COMMANDE — SAISIE ARTICLES
+   ============================================================ */
+.cats-scroll{
+  display:flex;gap:6px;overflow-x:auto;
+  padding:0 0 8px;scrollbar-width:none;flex-shrink:0;
+}
+.cats-scroll::-webkit-scrollbar{display:none}
+.cat-btn{
+  white-space:nowrap;padding:6px 14px;border-radius:20px;
+  font-size:12px;font-weight:500;
+  background:rgba(255,255,255,.06);color:var(--text-muted);
+  transition:all .15s;border:1px solid transparent;flex-shrink:0;
+}
+.cat-btn.active{background:rgba(201,168,76,.15);color:var(--or);border-color:var(--border-active)}
+.articles-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));
+  gap:8px;margin-top:8px;
+}
+.article-btn{
+  background:rgba(255,255,255,.05);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:10px 8px;
+  text-align:center;display:flex;flex-direction:column;align-items:center;gap:4px;
+  transition:all .15s;
+}
+.article-btn:active{background:rgba(201,168,76,.15);border-color:var(--border-active)}
+.article-btn.inactive{opacity:.4}
+.article-btn .art-nom{font-size:12px;font-weight:500;line-height:1.3}
+.article-btn .art-prix{font-size:13px;color:var(--or);font-weight:600}
+
+.panier-section{margin-top:12px}
+.panier-ligne{
+  background:rgba(255,255,255,.04);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:10px;margin-bottom:6px;
+}
+.panier-ligne-top{display:flex;align-items:center;gap:8px}
+.panier-nom{flex:1;font-size:13px;font-weight:500}
+.panier-prix{font-size:13px;color:var(--or);white-space:nowrap}
+.qte-ctrl{display:flex;align-items:center;gap:8px}
+.qte-btn{
+  width:28px;height:28px;border-radius:50%;
+  background:rgba(255,255,255,.08);
+  display:flex;align-items:center;justify-content:center;font-size:16px;
+}
+.qte-val{font-size:14px;font-weight:600;min-width:20px;text-align:center}
+.chips-row{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.chip{
+  padding:3px 10px;border-radius:20px;font-size:11px;
+  background:rgba(255,255,255,.06);border:1px solid var(--border);
+  cursor:pointer;transition:all .15s;white-space:nowrap;
+}
+.chip.active{background:rgba(201,168,76,.2);color:var(--or);border-color:var(--border-active)}
+.chip-del{
+  padding:3px 10px;border-radius:20px;font-size:11px;
+  background:rgba(192,82,42,.15);border:1px solid rgba(192,82,42,.3);
+  cursor:pointer;color:var(--terre);
+}
+.comment-input{
+  margin-top:6px;padding:6px 10px;font-size:12px;
+  background:rgba(255,255,255,.04);
+  border:1px solid var(--border);border-radius:var(--radius-sm);
+  width:100%;resize:none;height:34px;
+}
+.panier-total{
+  font-size:16px;font-weight:600;color:var(--or);
+  text-align:right;padding:10px 0 4px;
+}
+
+/* ============================================================
+   BOUTONS
+   ============================================================ */
+.btn{
+  padding:12px 20px;border-radius:var(--radius-sm);
+  font-size:14px;font-weight:600;text-align:center;
+  transition:opacity .15s,transform .1s;flex:1;
+}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--or);color:#1A1916}
+.btn-secondary{background:rgba(255,255,255,.08);color:var(--text);border:1px solid var(--border)}
+.btn-success{background:var(--green);color:#fff}
+.btn-danger{background:var(--terre);color:#fff}
+.btn-outline{background:transparent;border:1px solid var(--border-active);color:var(--or)}
+.btn:disabled{opacity:.35;pointer-events:none}
+
+/* ============================================================
+   VUE CUISINE & BAR — COMMANDES
+   ============================================================ */
+.station-controls{
+  display:flex;gap:8px;padding:12px;
+  background:var(--bg);border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.btn-rupture{
+  padding:8px 16px;border-radius:var(--radius-sm);
+  background:rgba(192,82,42,.15);border:1px solid rgba(192,82,42,.4);
+  color:var(--terre);font-size:12px;font-weight:600;
+  flex-shrink:0;
+}
+.btn-tout-pret-global{
+  padding:8px 16px;border-radius:var(--radius-sm);
+  background:rgba(76,175,125,.15);border:1px solid rgba(76,175,125,.4);
+  color:var(--green);font-size:12px;font-weight:600;flex:1;
+}
+
+.station-commandes{flex:1;overflow-y:auto;padding:10px;-webkit-overflow-scrolling:touch}
+.station-card{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius);margin-bottom:10px;overflow:hidden;
+}
+.station-card-header{
+  padding:10px 12px;display:flex;align-items:center;gap:8px;
+  border-bottom:1px solid var(--border);background:rgba(255,255,255,.02);
+}
+.station-card-timer{font-size:12px;font-weight:700;margin-left:auto}
+
+.batch-bandeau{
+  background:rgba(201,168,76,.08);border-bottom:1px solid var(--border);
+  padding:8px 12px;
+}
+.batch-title{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.batch-items{display:flex;flex-wrap:wrap;gap:4px}
+.batch-chip{
+  background:rgba(201,168,76,.15);color:var(--or);
+  padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;
+}
+
+.station-ligne{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.04);
+  position:relative;overflow:hidden;cursor:pointer;
+  user-select:none;-webkit-user-select:none;
+}
+.station-ligne:last-child{border-bottom:none}
+.station-ligne .ligne-nom{flex:1;font-size:13px;font-weight:500}
+.station-ligne .ligne-qte{
+  font-size:13px;font-weight:700;color:var(--or);
+  min-width:24px;text-align:center;
+}
+.station-ligne .ligne-comment{
+  font-size:11px;color:var(--text-muted);
+  width:100%;margin-top:2px;
+}
+.station-ligne .ligne-timer{font-size:10px;font-weight:600;white-space:nowrap}
+.station-ligne.pret{opacity:.4}
+.station-ligne.pret .ligne-nom{text-decoration:line-through}
+.station-ligne.blink-red{animation:blinkRed 1s ease-in-out infinite}
+@keyframes blinkRed{0%,100%{background:transparent}50%{background:rgba(217,79,79,.15)}}
+
+.swipe-indicator{
+  position:absolute;left:0;top:0;bottom:0;
+  background:linear-gradient(90deg,rgba(76,175,125,.5),transparent);
+  pointer-events:none;width:0;transition:width .05s;
+}
+
+/* ============================================================
+   VUE ADMIN
+   ============================================================ */
+.admin-section{margin-bottom:20px}
+.admin-section-title{
+  font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--or);
+  margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border);
+}
+.stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:8px}
+.stat-card{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:12px;text-align:center;
+}
+.stat-val{font-size:28px;font-weight:700;color:var(--or)}
+.stat-label{font-size:11px;color:var(--text-muted);margin-top:2px}
+
+.menu-admin-item{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:10px 12px;
+  margin-bottom:6px;display:flex;align-items:center;gap:10px;
+}
+.menu-admin-item.inactive{opacity:.5}
+.menu-admin-nom{flex:1;font-size:13px}
+.menu-admin-prix{font-size:13px;color:var(--or);font-weight:600;white-space:nowrap}
+.menu-admin-cat{font-size:10px;color:var(--text-muted)}
+
+.form-group{margin-bottom:12px}
+.form-label{font-size:12px;color:var(--text-muted);margin-bottom:4px;display:block}
+
+.config-row{
+  display:flex;align-items:center;gap:8px;
+  padding:10px 0;border-bottom:1px solid var(--border);
+}
+.config-row:last-child{border-bottom:none}
+.config-label{flex:1;font-size:13px}
+.config-val{font-size:13px;color:var(--or);font-weight:600}
+
+.chips-config-list{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.chip-config{
+  padding:4px 12px;border-radius:20px;font-size:12px;
+  background:rgba(255,255,255,.06);border:1px solid var(--border);
+  display:flex;align-items:center;gap:6px;
+}
+.chip-config-del{color:var(--terre);font-size:14px;cursor:pointer}
+
+/* ============================================================
+   MODAL SELECTION TYPE COMMANDE
+   ============================================================ */
+.type-choice{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0}
+.type-btn{
+  background:rgba(255,255,255,.05);border:1px solid var(--border);
+  border-radius:var(--radius);padding:20px 12px;
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  font-size:14px;font-weight:500;
+  transition:all .15s;
+}
+.type-btn:active,.type-btn.selected{background:rgba(201,168,76,.15);border-color:var(--border-active);color:var(--or)}
+.type-btn .type-icon{font-size:32px}
+
+/* ============================================================
+   MODAL EDIT — LOCKED STATE
+   ============================================================ */
+.locked-overlay{
+  position:absolute;inset:0;background:rgba(0,0,0,.6);
+  border-radius:var(--radius);
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;color:var(--text-muted);text-align:center;padding:16px;z-index:5;
+}
+
+/* ============================================================
+   PIN MODAL
+   ============================================================ */
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+.pin-btn{
+  background:rgba(255,255,255,.07);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:14px;
+  font-size:20px;font-weight:500;text-align:center;
+  transition:background .1s;
+}
+.pin-btn:active{background:rgba(201,168,76,.2)}
+.pin-display{
+  letter-spacing:8px;font-size:24px;text-align:center;
+  padding:12px;color:var(--or);min-height:50px;
+}
+
+/* ============================================================
+   MODAL RUPTURE
+   ============================================================ */
+.rupture-item{
+  display:flex;align-items:center;gap:10px;
+  padding:10px;background:var(--bg-card);
+  border:1px solid var(--border);border-radius:var(--radius-sm);
+  margin-bottom:6px;
+}
+.rupture-nom{flex:1;font-size:13px}
+.toggle-switch{
+  width:44px;height:24px;border-radius:12px;
+  background:rgba(255,255,255,.1);position:relative;cursor:pointer;
+  transition:background .2s;flex-shrink:0;
+}
+.toggle-switch.on{background:var(--green)}
+.toggle-switch.off{background:var(--terre)}
+.toggle-knob{
+  position:absolute;top:3px;width:18px;height:18px;
+  border-radius:50%;background:#fff;transition:left .2s;
+}
+.toggle-switch.on .toggle-knob{left:23px}
+.toggle-switch.off .toggle-knob{left:3px}
+
+/* ============================================================
+   EMPORTER CARDS
+   ============================================================ */
+.emporter-card{
+  background:var(--bg-card);border:1px solid rgba(192,82,42,.3);
+  border-radius:var(--radius);padding:12px;cursor:pointer;
+  display:flex;flex-direction:column;gap:6px;
+  transition:border-color .2s;
+}
+.emporter-num{font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--terre)}
+
+/* ============================================================
+   INDICATEUR TOUT PRÊT
+   ============================================================ */
+.pret-all-badge{
+  display:inline-flex;align-items:center;gap:4px;
+  background:var(--green);color:#fff;
+  padding:3px 10px;border-radius:20px;
+  font-size:11px;font-weight:700;
+  animation:pulsePret 1.2s ease-in-out infinite;
+}
+@keyframes pulsePret{0%,100%{box-shadow:0 0 0 0 rgba(76,175,125,.4)}50%{box-shadow:0 0 0 6px rgba(76,175,125,0)}}
+</style>
+</head>
+<body>
+
+<!-- Banner offline -->
+<div id="banner-offline" class="banner-offline">⚠ Connexion perdue — Vérifiez votre Wi-Fi</div>
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<!-- ============================================================
+     VUE SERVICE
+     ============================================================ -->
+<div id="view-service" class="view active">
+  <div class="view-header">
+    <h1>Service</h1>
+    <div style="display:flex;align-items:center;gap:8px">
+      <button class="btn btn-secondary" style="padding:6px 12px;font-size:12px" onclick="openSonModal()">🔔</button>
+    </div>
+  </div>
+  <div class="view-content" id="service-content"></div>
+</div>
+
+<!-- ============================================================
+     VUE CUISINE
+     ============================================================ -->
+<div id="view-cuisine" class="view">
+  <div class="view-header">
+    <h1>Cuisine</h1>
+    <button class="btn btn-secondary" style="padding:6px 12px;font-size:12px" onclick="openSonModal()">🔔</button>
+  </div>
+  <div class="station-controls">
+    <button class="btn-rupture" onclick="openRuptureModal('cuisine')">⚠ Rupture</button>
+    <button class="btn-tout-pret-global" onclick="marquerToutPretStation('cuisine')">✓ Tout Prêt Cuisine</button>
+  </div>
+  <div class="station-commandes" id="cuisine-content"></div>
+</div>
+
+<!-- ============================================================
+     VUE BAR
+     ============================================================ -->
+<div id="view-bar" class="view">
+  <div class="view-header">
+    <h1>Bar</h1>
+    <button class="btn btn-secondary" style="padding:6px 12px;font-size:12px" onclick="openSonModal()">🔔</button>
+  </div>
+  <div class="station-controls">
+    <button class="btn-rupture" onclick="openRuptureModal('bar')">⚠ Rupture</button>
+    <button class="btn-tout-pret-global" onclick="marquerToutPretStation('bar')">✓ Tout Prêt Bar</button>
+  </div>
+  <div class="station-commandes" id="bar-content"></div>
+</div>
+
+<!-- ============================================================
+     VUE ADMIN
+     ============================================================ -->
+<div id="view-admin" class="view">
+  <div class="view-header">
+    <h1>Admin</h1>
+    <button class="btn btn-secondary" style="padding:6px 12px;font-size:12px" onclick="deconnecterAdmin()">Verrouiller</button>
+  </div>
+  <div class="view-content" id="admin-content"></div>
+</div>
+
+<!-- ============================================================
+     NAV BOTTOM
+     ============================================================ -->
+<nav class="nav-bottom">
+  <button class="nav-btn active" id="nav-service" onclick="showView('service')">
+    <span class="nav-icon">🍽</span>
+    <span class="nav-label">Service</span>
+    <span id="badge-service" class="nav-badge" style="display:none"></span>
+  </button>
+  <button class="nav-btn" id="nav-cuisine" onclick="showView('cuisine')">
+    <span class="nav-icon">👨‍🍳</span>
+    <span class="nav-label">Cuisine</span>
+    <span id="badge-cuisine" class="nav-badge" style="display:none"></span>
+  </button>
+  <button class="nav-btn" id="nav-bar" onclick="showView('bar')">
+    <span class="nav-icon">🍹</span>
+    <span class="nav-label">Bar</span>
+    <span id="badge-bar" class="nav-badge" style="display:none"></span>
+  </button>
+  <button class="nav-btn" id="nav-admin" onclick="showView('admin')">
+    <span class="nav-icon">⚙️</span>
+    <span class="nav-label">Admin</span>
+  </button>
+  <div class="connexion-dot" id="connexion-dot"></div>
+</nav>
+
+<!-- ============================================================
+     MODAL OVERLAY (shared)
+     ============================================================ -->
+<div id="modal-overlay" class="modal-overlay" onclick="closeModalOnBackdrop(event)">
+  <div class="modal-sheet" id="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h2 id="modal-title">Commande</h2>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer" id="modal-footer"></div>
+  </div>
+</div>
+
+<!-- Modal PIN Admin -->
+<div id="modal-pin" class="modal-overlay" style="align-items:center;padding:24px">
+  <div style="background:var(--bg-modal);border-radius:var(--radius);padding:24px;width:100%;max-width:320px">
+    <h2 style="font-size:20px;color:var(--or);text-align:center;margin-bottom:4px">Administration</h2>
+    <p style="font-size:12px;color:var(--text-muted);text-align:center;margin-bottom:16px">Entrez le code PIN</p>
+    <div class="pin-display" id="pin-display">·  ·  ·  ·</div>
+    <div class="pin-pad">
+      <button class="pin-btn" onclick="pinPress('1')">1</button>
+      <button class="pin-btn" onclick="pinPress('2')">2</button>
+      <button class="pin-btn" onclick="pinPress('3')">3</button>
+      <button class="pin-btn" onclick="pinPress('4')">4</button>
+      <button class="pin-btn" onclick="pinPress('5')">5</button>
+      <button class="pin-btn" onclick="pinPress('6')">6</button>
+      <button class="pin-btn" onclick="pinPress('7')">7</button>
+      <button class="pin-btn" onclick="pinPress('8')">8</button>
+      <button class="pin-btn" onclick="pinPress('9')">9</button>
+      <button class="pin-btn" onclick="pinClear()" style="font-size:14px;color:var(--text-muted)">⌫</button>
+      <button class="pin-btn" onclick="pinPress('0')">0</button>
+      <button class="pin-btn" onclick="pinCancel()" style="font-size:12px;color:var(--text-muted)">✕</button>
+    </div>
+    <div id="pin-error" style="color:var(--terre);font-size:12px;text-align:center;min-height:18px"></div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// CONFIG
+// ============================================================
+const CONFIG = {
+  APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbx0wSPwI7fA-oOWbmkscPssXGq1eHtJShkESvo91gpycVLPU2an4jVgAhnmGCnMixTMgQ/exec",
+  POLL_SERVICE: 4000,
+  POLL_STATION: 6000,
+  FETCH_TIMEOUT: 8000,
+  RETRY_DELAY: 2000,
+};
+
+// ============================================================
+// STATE
+// ============================================================
+let STATE = {
+  menu: [],
+  categories: [],
+  commandes: [],
+  config: {
+    chips: ["Pâtes","Frites","Salade","Légumes","Sans oignons","Bien cuit","Saignant","Sans gluten","Allergie","À part"],
+    seuilOrangeCommande: 15,
+    seuilRougeCommande: 25,
+    seuilRougeArticle: 15,
+  },
+  currentView: 'service',
+  adminUnlocked: false,
+  isOnline: true,
+  writeQueue: [],
+  writeInProgress: false,
+  terminalId: '',
+  pollingTimer: null,
+  prevCommandeIds: new Set(),
+  prevPretLigneIds: new Set(),
+  audioEnabled: false,
+  audioCtx: null,
+  wakeLock: null,
+  // Edit modal state
+  editCommande: null,
+  editCatFilter: null,
+  ticketCounter: parseInt(localStorage.getItem('gio_ticket') || '0'),
+};
+
+// ============================================================
+// TERMINAL ID
+// ============================================================
+function getTerminalId() {
+  let id = localStorage.getItem('gio_terminal');
+  if (!id) {
+    id = 'term_' + Date.now() + '_' + Math.random().toString(36).substr(2,5);
+    localStorage.setItem('gio_terminal', id);
+  }
+  return id;
+}
+
+// ============================================================
+// UTILITAIRES
+// ============================================================
+function formatPrice(p) {
+  return parseFloat(p).toFixed(2).replace('.', ',') + ' €';
+}
+
+function formatTimer(ms) {
+  const s = Math.floor(ms / 1000);
+  const m = Math.floor(s / 60);
+  const h = Math.floor(m / 60);
+  if (h > 0) return h + 'h' + String(m % 60).padStart(2,'0');
+  return m + ':' + String(s % 60).padStart(2,'0');
+}
+
+function timerClass(ms, isArticle) {
+  const min = ms / 60000;
+  const orange = isArticle ? STATE.config.seuilOrangeCommande : STATE.config.seuilOrangeCommande;
+  const red = isArticle ? STATE.config.seuilRougeArticle : STATE.config.seuilRougeCommande;
+  if (min >= red) return 'red';
+  if (min >= orange) return 'orange';
+  return 'green';
+}
+
+function showToast(msg, type = 'default') {
+  const c = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity .3s'; }, 2200);
+  setTimeout(() => t.remove(), 2600);
+}
+
+function generateId(prefix) {
+  return (prefix||'id') + '_' + Date.now() + '_' + Math.random().toString(36).substr(2,5);
+}
+
+function getLignes(cmd) {
+  if (!cmd.lignes) return [];
+  if (Array.isArray(cmd.lignes)) return cmd.lignes;
+  try { return JSON.parse(cmd.lignes); } catch(e) { return []; }
+}
+
+function saveLignes(cmd, lignes) {
+  cmd.lignes = lignes;
+}
+
+// ============================================================
+// WEB AUDIO
+// ============================================================
+function initAudioContext() {
+  if (!STATE.audioCtx) {
+    STATE.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (STATE.audioCtx.state === 'suspended') STATE.audioCtx.resume();
+  STATE.audioEnabled = true;
+  showToast('Son activé', 'success');
+}
+
+function openSonModal() {
+  initAudioContext();
+  playBip();
+}
+
+function playBip(freq = 880, dur = 0.15) {
+  if (!STATE.audioCtx) return;
+  try {
+    const osc = STATE.audioCtx.createOscillator();
+    const gain = STATE.audioCtx.createGain();
+    osc.connect(gain); gain.connect(STATE.audioCtx.destination);
+    osc.frequency.value = freq;
+    osc.type = 'sine';
+    gain.gain.setValueAtTime(0.3, STATE.audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, STATE.audioCtx.currentTime + dur);
+    osc.start(); osc.stop(STATE.audioCtx.currentTime + dur + 0.05);
+  } catch(e) {}
+}
+
+function playNewOrder() {
+  playBip(660, 0.1);
+  setTimeout(() => playBip(880, 0.15), 120);
+  if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+}
+
+// ============================================================
+// WAKE LOCK
+// ============================================================
+async function requestWakeLock() {
+  try {
+    if ('wakeLock' in navigator) {
+      STATE.wakeLock = await navigator.wakeLock.request('screen');
+    }
+  } catch(e) {}
+}
+
+// ============================================================
+// API FETCH
+// ============================================================
+async function apiFetch(input, options = {}, timeout = CONFIG.FETCH_TIMEOUT) {
+  const controller = new AbortController();
+  const tid = setTimeout(() => controller.abort(), timeout);
+  try {
+    const res = await fetch(input, { ...options, signal: controller.signal });
+    clearTimeout(tid);
+    const text = await res.text();
+    try { return JSON.parse(text); }
+    catch(e) { return { error: 'JSON invalide: ' + text.substr(0,100) }; }
+  } catch(e) {
+    clearTimeout(tid);
+    throw e;
+  }
+}
+
+async function apiGet(action, params = {}) {
+  const url = new URL(CONFIG.APPS_SCRIPT_URL);
+  url.searchParams.set('action', action);
+  Object.entries(params).forEach(([k,v]) => url.searchParams.set(k, v));
+  return apiFetch(url.toString());
+}
+
+async function apiPostRaw(action, data = {}) {
+  return apiFetch(CONFIG.APPS_SCRIPT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, data }),
+  });
+}
+
+// ============================================================
+// CONNEXION INDICATOR
+// ============================================================
+function setOnline(ok) {
+  STATE.isOnline = ok;
+  const dot = document.getElementById('connexion-dot');
+  const banner = document.getElementById('banner-offline');
+  if (dot) dot.classList.toggle('offline', !ok);
+  if (banner) banner.classList.toggle('visible', !ok);
+}
+
+// ============================================================
+// WRITE QUEUE (FIFO)
+// ============================================================
+function enqueueWrite(action, data) {
+  return new Promise((resolve, reject) => {
+    STATE.writeQueue.push({ action, data, resolve, reject });
+    if (!STATE.writeInProgress) processWriteQueue();
+  });
+}
+
+async function processWriteQueue() {
+  if (STATE.writeQueue.length === 0) { STATE.writeInProgress = false; return; }
+  STATE.writeInProgress = true;
+  const { action, data, resolve, reject } = STATE.writeQueue.shift();
+  let result;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      result = await apiPostRaw(action, data);
+      setOnline(true);
+      break;
+    } catch(e) {
+      if (attempt === 0) {
+        await new Promise(r => setTimeout(r, CONFIG.RETRY_DELAY));
+      } else {
+        setOnline(false);
+        reject(e);
+        processWriteQueue();
+        return;
+      }
+    }
+  }
+  if (result && result.error === 'conflict') {
+    // Résolution automatique de conflit
+    try {
+      const fresh = await apiGet('getCommandes');
+      if (fresh.commandes) {
+        const serverCmd = fresh.commandes.find(c => c.id === data.id);
+        if (serverCmd) {
+          data.updatedAt = serverCmd.updatedAt;
+          const retry = await apiPostRaw(action, data);
+          result = retry;
+        }
+      }
+    } catch(e) {}
+  }
+  resolve(result);
+  processWriteQueue();
+}
+
+// ============================================================
+// POLLING
+// ============================================================
+function startPolling() {
+  if (STATE.pollingTimer) clearInterval(STATE.pollingTimer);
+  const interval = ['cuisine','bar'].includes(STATE.currentView)
+    ? CONFIG.POLL_STATION : CONFIG.POLL_SERVICE;
+  STATE.pollingTimer = setInterval(pollCommandes, interval);
+  pollCommandes();
+}
+
+function stopPolling() {
+  if (STATE.pollingTimer) { clearInterval(STATE.pollingTimer); STATE.pollingTimer = null; }
+}
+
+async function pollCommandes() {
+  if (!CONFIG.APPS_SCRIPT_URL) return;
+  try {
+    const res = await apiGet('getCommandes');
+    if (res.commandes) {
+      setOnline(true);
+      const prev = new Map(STATE.commandes.map(c => [c.id, c]));
+      const freshIds = new Set(res.commandes.map(c => c.id));
+      // Détecter nouvelles commandes ouvertes / demandes client
+      let hasNew = false;
+      let hasNewClient = false;
+      res.commandes.forEach(c => {
+        if (!STATE.prevCommandeIds.has(c.id)) {
+          if (c.statut === 'ouverte') hasNew = true;
+          if (c.statut === 'en_attente_validation') hasNewClient = true;
+        }
+      });
+      STATE.commandes = res.commandes;
+      STATE.prevCommandeIds = freshIds;
+      if (hasNew) playNewOrder();
+      if (hasNewClient) playNewOrder();
+      renderCurrentView();
+      updateNavBadges();
+    }
+  } catch(e) {
+    setOnline(false);
+  }
+}
+
+function updateNavBadges() {
+  const ouvertes = STATE.commandes.filter(c => c.statut === 'ouverte');
+  const clientDemands = STATE.commandes.filter(c => c.statut === 'en_attente_validation');
+
+  // Badge service = nombre de demandes client en attente
+  const bs = document.getElementById('badge-service');
+  if (bs) {
+    const cnt = clientDemands.length;
+    bs.textContent = cnt; bs.style.display = cnt ? '' : 'none';
+  }
+
+  // Badge cuisine = nombre de lignes cuisine en_attente sur commandes ouvertes
+  const cuisineLignes = ouvertes.reduce((acc, c) => {
+    return acc + getLignes(c).filter(l => l.station === 'cuisine' && l.statut === 'en_attente').length;
+  }, 0);
+  const bc = document.getElementById('badge-cuisine');
+  if (bc) { bc.textContent = cuisineLignes; bc.style.display = cuisineLignes ? '' : 'none'; }
+
+  // Badge bar = lignes bar en_attente
+  const barLignes = ouvertes.reduce((acc, c) => {
+    return acc + getLignes(c).filter(l => l.station === 'bar' && l.statut === 'en_attente').length;
+  }, 0);
+  const bb = document.getElementById('badge-bar');
+  if (bb) { bb.textContent = barLignes; bb.style.display = barLignes ? '' : 'none'; }
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function showView(name) {
+  if (name === 'admin' && !STATE.adminUnlocked) {
+    showPinModal();
+    return;
+  }
+  STATE.currentView = name;
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const v = document.getElementById('view-' + name);
+  if (v) v.classList.add('active');
+  const n = document.getElementById('nav-' + name);
+  if (n) n.classList.add('active');
+  // Redémarrer polling avec bon intervalle
+  stopPolling(); startPolling();
+  renderCurrentView();
+}
+
+function renderCurrentView() {
+  switch(STATE.currentView) {
+    case 'service': renderService(); break;
+    case 'cuisine': renderStation('cuisine'); break;
+    case 'bar': renderStation('bar'); break;
+    case 'admin': renderAdmin(); break;
+  }
+}
+
+// ============================================================
+// VUE SERVICE
+// ============================================================
+function renderService() {
+  const el = document.getElementById('service-content');
+  if (!el) return;
+
+  const surPlace = STATE.commandes.filter(c =>
+    c.type === 'sur_place' && c.statut !== 'payée' && c.statut !== 'refusée');
+  const emporter = STATE.commandes.filter(c =>
+    c.type === 'emporter' && c.statut !== 'payée' && c.statut !== 'refusée');
+  const clients = STATE.commandes.filter(c => c.statut === 'en_attente_validation');
+
+  let html = '';
+
+  // Demandes client en attente
+  if (clients.length > 0) {
+    html += '<div class="section-title">📱 Demandes client (' + clients.length + ')</div>';
+    clients.forEach(c => {
+      const lignes = getLignes(c);
+      const total = lignes.reduce((s,l) => s + l.prix * (l.qte||1), 0);
+      html += `<div class="card" style="border-color:var(--orange);margin-bottom:8px;animation:pulse-orange 1.5s ease-in-out infinite">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <span class="badge badge-client">📱 CLIENT</span>
+          <strong style="font-size:15px">Table ${c.table}</strong>
+          <span style="margin-left:auto;font-size:14px;color:var(--or)">${formatPrice(total)}</span>
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px">${lignes.map(l=>(l.qte||1)+'× '+l.nom+(l.commentaire?' — '+l.commentaire:'')).join('<br>')}</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-success" style="padding:8px;font-size:13px" onclick="validerDemandeClient('${c.id}')">✓ Valider</button>
+          <button class="btn btn-danger" style="padding:8px;font-size:13px" onclick="refuserDemandeClient('${c.id}')">✕ Refuser</button>
+        </div>
+      </div>`;
+    });
+  }
+
+  // Tables sur place
+  html += '<div class="section-title">Tables</div>';
+  html += '<div class="tables-grid">';
+
+  // Récupérer toutes les tables occupées
+  const tableNums = new Set(surPlace.map(c => c.table));
+
+  // Bouton nouvelle table
+  html += `<button class="btn-new-table" onclick="openModalNewCommande()">
+    <span class="plus">+</span>
+    <span>Nouvelle table</span>
+  </button>`;
+
+  surPlace.forEach(c => {
+    html += renderTableCard(c);
+  });
+
+  html += '</div>';
+
+  // Emporter
+  if (emporter.length > 0 || true) {
+    html += '<div class="section-title">Emporter</div>';
+    html += '<div class="tables-grid">';
+    html += `<button class="btn-new-table" onclick="openModalNewCommandeEmporter()">
+      <span class="plus">+</span>
+      <span>Nouvel emporté</span>
+    </button>`;
+    emporter.forEach(c => html += renderEmporterCard(c));
+    html += '</div>';
+  }
+
+  el.innerHTML = html;
+
+  // Démarrer chronomètres
+  startServiceTimers();
+}
+
+function renderTableCard(c) {
+  const lignes = getLignes(c);
+  const now = Date.now();
+  const ref = c.sentAt ? parseInt(c.sentAt) : parseInt(c.createdAt);
+  const elapsed = ref ? now - ref : 0;
+  const tClass = c.statut === 'ouverte' ? timerClass(elapsed, false) : 'green';
+  const tStr = c.statut === 'ouverte' && ref ? formatTimer(elapsed) : '';
+
+  const pretAll = isPretAll(c);
+  const isLocked = isLockedByOther(c);
+  const isClient = c.statut === 'en_attente_validation';
+  const isBrouillon = c.statut === 'brouillon';
+
+  let badges = '';
+  if (c.vip) badges += '<span class="badge badge-vip">⭐ VIP</span>';
+  if (isBrouillon) badges += '<span class="badge badge-brouillon">Brouillon</span>';
+  if (pretAll) badges += '<span class="pret-all-badge">✓ Prêt</span>';
+
+  let cardClass = 'table-card';
+  if (c.statut !== 'brouillon') cardClass += ' has-order';
+  if (pretAll) cardClass += ' pret-all';
+  if (isLocked) cardClass += ' locked';
+
+  const totalItems = lignes.reduce((s,l) => s + (l.qte||1), 0);
+
+  return `<div class="${cardClass}" onclick="openModalEditCommande('${c.id}')" data-cmdid="${c.id}" data-sentAt="${c.sentAt || c.createdAt}">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between">
+      <div class="table-num">${c.table}</div>
+      ${c.couverts ? `<div class="table-info">👥 ${c.couverts}</div>` : ''}
+    </div>
+    ${badges ? '<div class="table-badges">' + badges + '</div>' : ''}
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto">
+      <div class="table-info">${totalItems} article${totalItems > 1 ? 's' : ''}</div>
+      ${tStr ? `<div class="table-timer ${tClass}" data-timer="${c.id}">${tStr}</div>` : ''}
+    </div>
+  </div>`;
+}
+
+function renderEmporterCard(c) {
+  const lignes = getLignes(c);
+  const now = Date.now();
+  const ref = c.sentAt ? parseInt(c.sentAt) : parseInt(c.createdAt);
+  const elapsed = ref ? now - ref : 0;
+  const tClass = c.statut === 'ouverte' ? timerClass(elapsed, false) : 'green';
+  const tStr = c.statut === 'ouverte' && ref ? formatTimer(elapsed) : '';
+  const pretAll = isPretAll(c);
+  const totalItems = lignes.reduce((s,l) => s + (l.qte||1), 0);
+
+  return `<div class="emporter-card" onclick="openModalEditCommande('${c.id}')" data-cmdid="${c.id}" data-sentAt="${c.sentAt||c.createdAt}">
+    <div class="emporter-num">#${String(c.table).padStart(4,'0')}</div>
+    <div style="font-size:12px;color:var(--text-muted)">${totalItems} article${totalItems>1?'s':''}</div>
+    ${pretAll ? '<span class="pret-all-badge">✓ Prêt</span>' : ''}
+    ${tStr ? `<div class="table-timer ${tClass}">${tStr}</div>` : ''}
+  </div>`;
+}
+
+function isPretAll(cmd) {
+  const lignes = getLignes(cmd);
+  if (lignes.length === 0) return false;
+  return lignes.every(l => l.statut === 'prêt' || l.statut === 'servi');
+}
+
+function isLockedByOther(cmd) {
+  if (!cmd.lockedBy) return false;
+  try {
+    const lock = typeof cmd.lockedBy === 'string' ? JSON.parse(cmd.lockedBy) : cmd.lockedBy;
+    if (!lock || !lock.terminalId) return false;
+    if (lock.terminalId === STATE.terminalId) return false;
+    const age = Date.now() - (lock.timestamp || 0);
+    return age < 60000;
+  } catch(e) { return false; }
+}
+
+let serviceTimerInterval = null;
+function startServiceTimers() {
+  if (serviceTimerInterval) clearInterval(serviceTimerInterval);
+  serviceTimerInterval = setInterval(() => {
+    document.querySelectorAll('[data-timer]').forEach(el => {
+      const cmdId = el.getAttribute('data-timer');
+      const cmd = STATE.commandes.find(c => c.id === cmdId);
+      if (!cmd || cmd.statut !== 'ouverte') return;
+      const ref = cmd.sentAt ? parseInt(cmd.sentAt) : parseInt(cmd.createdAt);
+      if (!ref) return;
+      const elapsed = Date.now() - ref;
+      el.textContent = formatTimer(elapsed);
+      el.className = 'table-timer ' + timerClass(elapsed, false);
+    });
+  }, 1000);
+}
+
+// ============================================================
+// MODAL NOUVELLE COMMANDE
+// ============================================================
+function openModalNewCommande() {
+  STATE.editCommande = { id: null, type: 'sur_place', lignes: [], statut: 'brouillon' };
+  showModalStep1();
+}
+
+function openModalNewCommandeEmporter() {
+  STATE.editCommande = { id: null, type: 'emporter', lignes: [], statut: 'brouillon' };
+  showModalStep1Emporter();
+}
+
+function showModalStep1() {
+  document.getElementById('modal-title').textContent = 'Nouvelle commande';
+  document.getElementById('modal-body').innerHTML = `
+    <div class="type-choice">
+      <button class="type-btn selected" onclick="selectType('sur_place')">
+        <span class="type-icon">🪑</span>Sur place
+      </button>
+      <button class="type-btn" onclick="selectType('emporter')">
+        <span class="type-icon">🥡</span>À emporter
+      </button>
+    </div>
+    <div id="type-form"></div>`;
+  document.getElementById('modal-footer').innerHTML =
+    '<button class="btn btn-primary" onclick="confirmerTypeCommande()">Continuer →</button>';
+  selectType('sur_place');
+  openModal();
+}
+
+function showModalStep1Emporter() {
+  STATE.editCommande.type = 'emporter';
+  showModalStep1();
+  selectType('emporter');
+}
+
+function selectType(t) {
+  STATE.editCommande.type = t;
+  document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected'));
+  const btns = document.querySelectorAll('.type-btn');
+  btns.forEach(b => { if (b.textContent.includes(t === 'sur_place' ? 'place' : 'porter')) b.classList.add('selected'); });
+
+  const form = document.getElementById('type-form');
+  if (t === 'sur_place') {
+    form.innerHTML = `
+      <div class="form-group">
+        <label class="form-label">Numéro de table</label>
+        <input type="number" id="inp-table" min="1" max="99" placeholder="ex: 5" style="font-size:20px;text-align:center">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Couverts (optionnel)</label>
+        <input type="number" id="inp-couverts" min="1" placeholder="Nombre de personnes">
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 0">
+        <label class="form-label" style="margin:0;flex:1">Table VIP</label>
+        <input type="checkbox" id="inp-vip" style="width:auto">
+      </div>`;
+  } else {
+    form.innerHTML = `<div style="text-align:center;padding:20px 0;color:var(--text-muted);font-size:13px">
+      Ticket numéro #${String(STATE.ticketCounter + 1).padStart(4,'0')} sera assigné automatiquement
+    </div>`;
+  }
+}
+
+function confirmerTypeCommande() {
+  if (STATE.editCommande.type === 'sur_place') {
+    const t = document.getElementById('inp-table');
+    if (!t || !t.value) { showToast('Entrez un numéro de table', 'error'); return; }
+    STATE.editCommande.table = t.value;
+    STATE.editCommande.couverts = document.getElementById('inp-couverts')?.value || '';
+    STATE.editCommande.vip = document.getElementById('inp-vip')?.checked || false;
+  } else {
+    STATE.ticketCounter++;
+    localStorage.setItem('gio_ticket', STATE.ticketCounter);
+    STATE.editCommande.table = STATE.ticketCounter;
+  }
+  STATE.editCommande.id = generateId('cmd');
+  STATE.editCommande.createdAt = Date.now();
+  STATE.editCommande.updatedAt = Date.now();
+  STATE.editCommande.source = 'service';
+  STATE.editCatFilter = STATE.categories[0] || null;
+  showModalArticles();
+}
+
+// ============================================================
+// MODAL ÉDITION COMMANDE EXISTANTE
+// ============================================================
+async function openModalEditCommande(cmdId) {
+  const cmd = STATE.commandes.find(c => c.id === cmdId);
+  if (!cmd) return;
+  if (isLockedByOther(cmd)) { showToast('✏️ En cours de modification par un autre terminal', 'warning'); return; }
+  // Acquérir le verrou
+  const lockData = JSON.stringify({ terminalId: STATE.terminalId, timestamp: Date.now() });
+  const cmdCopy = JSON.parse(JSON.stringify(cmd));
+  cmdCopy.lockedBy = lockData;
+  STATE.editCommande = cmdCopy;
+  STATE.editCatFilter = STATE.categories[0] || null;
+  // Écrire le verrou en arrière-plan
+  enqueueWrite('saveCommande', { id: cmd.id, lockedBy: lockData, updatedAt: cmd.updatedAt, ...cmdCopy });
+  showModalArticles();
+}
+
+function releaseModalLock() {
+  if (!STATE.editCommande || !STATE.editCommande.id) return;
+  const cmd = STATE.editCommande;
+  if (!cmd.lockedBy) return;
+  try {
+    const lock = typeof cmd.lockedBy === 'string' ? JSON.parse(cmd.lockedBy) : cmd.lockedBy;
+    if (lock.terminalId !== STATE.terminalId) return;
+  } catch(e) { return; }
+  // Libérer le verrou
+  const updated = { ...cmd, lockedBy: '' };
+  enqueueWrite('saveCommande', updated);
+}
+
+// ============================================================
+// MODAL ARTICLES (saisie)
+// ============================================================
+function showModalArticles() {
+  const cmd = STATE.editCommande;
+  const isNew = !STATE.commandes.find(c => c.id === cmd.id);
+  const title = cmd.type === 'emporter'
+    ? 'Emporté #' + String(cmd.table).padStart(4,'0')
+    : 'Table ' + cmd.table;
+  document.getElementById('modal-title').textContent = title;
+
+  // Catégories disponibles (Suppléments en dernier)
+  const cats = STATE.categories.filter(c => c !== 'Suppléments');
+  cats.push('Suppléments');
+
+  let catsHtml = cats.map(c =>
+    `<button class="cat-btn ${STATE.editCatFilter === c ? 'active' : ''}" onclick="filterCat('${c}')">${c}</button>`
+  ).join('');
+
+  const lignes = getLignes(cmd);
+  const total = lignes.reduce((s,l) => s + (parseFloat(l.prix)||0) * (l.qte||1), 0);
+
+  let articlesHtml = '';
+  const filtered = STATE.menu.filter(m => m.categorie === STATE.editCatFilter);
+  filtered.forEach(m => {
+    const inactive = !m.actif;
+    articlesHtml += `<button class="article-btn ${inactive ? 'inactive' : ''}"
+      onclick="${inactive ? '' : `addArticle('${m.id}')`}">
+      <span class="art-nom">${m.nom}</span>
+      <span class="art-prix">${formatPrice(m.prix)}</span>
+    </button>`;
+  });
+
+  let panierHtml = lignes.map(l => buildLigneHtml(l)).join('');
+
+  document.getElementById('modal-body').innerHTML = `
+    <div class="cats-scroll">${catsHtml}</div>
+    <div class="articles-grid">${articlesHtml}</div>
+    <div class="panier-section">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0 4px">
+        <span style="font-size:13px;font-weight:600">Panier</span>
+        ${cmd.vip ? '<span class="badge badge-vip">⭐ VIP</span>' : ''}
+      </div>
+      <div id="panier-lignes">${panierHtml}</div>
+      <div class="panier-total">Total : ${formatPrice(total)}</div>
+    </div>`;
+
+  const footerBtns = [];
+  if (isNew || cmd.statut === 'brouillon') {
+    if (lignes.length > 0) {
+      footerBtns.push('<button class="btn btn-primary" onclick="envoyerEnCuisine()">Envoyer en cuisine</button>');
+      footerBtns.push('<button class="btn btn-success" onclick="encaisser()">Encaisser</button>');
+    } else {
+      footerBtns.push('<button class="btn btn-secondary" onclick="closeModal()">Fermer</button>');
+    }
+  } else if (cmd.statut === 'ouverte') {
+    footerBtns.push('<button class="btn btn-outline" onclick="ajouterLignesCommande()">+ Ajouter</button>');
+    footerBtns.push('<button class="btn btn-success" onclick="encaisser()">Encaisser</button>');
+  }
+
+  document.getElementById('modal-footer').innerHTML = footerBtns.join('');
+  openModal();
+}
+
+function buildLigneHtml(l) {
+  const chips = STATE.config.chips || [];
+  const activeChips = l.commentaire ? l.commentaire.split(' · ') : [];
+  const chipsHtml = chips.map(c => {
+    const isActive = activeChips.includes(c);
+    return `<span class="chip ${isActive ? 'active' : ''}" onclick="toggleChip('${l.id}','${c}')">${c}</span>`;
+  }).join('');
+
+  return `<div class="panier-ligne" id="ligne-${l.id}">
+    <div class="panier-ligne-top">
+      <span class="panier-nom">${(l.qte||1) > 1 ? (l.qte||1)+'× ' : ''}${l.nom}</span>
+      <span class="panier-prix">${formatPrice((l.prix||0) * (l.qte||1))}</span>
+      <div class="qte-ctrl">
+        <button class="qte-btn" onclick="updateQte('${l.id}',-1)">−</button>
+        <span class="qte-val">${l.qte||1}</span>
+        <button class="qte-btn" onclick="updateQte('${l.id}',1)">+</button>
+      </div>
+      <button class="chip-del" onclick="removeLigne('${l.id}')">✕</button>
+    </div>
+    <div class="chips-row">${chipsHtml}</div>
+    <textarea class="comment-input" placeholder="Commentaire libre…"
+      onchange="setCommentaire('${l.id}', this.value)">${l.commentaire || ''}</textarea>
+  </div>`;
+}
+
+function filterCat(cat) {
+  STATE.editCatFilter = cat;
+  showModalArticles();
+}
+
+function addArticle(menuId) {
+  const m = STATE.menu.find(x => x.id === menuId);
+  if (!m || !m.actif) return;
+  const lignes = getLignes(STATE.editCommande);
+  const newLigne = {
+    id: generateId('ligne'),
+    menuId: m.id,
+    nom: m.nom,
+    categorie: m.categorie,
+    station: m.station,
+    prix: m.prix,
+    qte: 1,
+    statut: 'en_attente',
+    commentaire: '',
+    addedAt: Date.now(),
+  };
+  lignes.push(newLigne);
+  saveLignes(STATE.editCommande, lignes);
+  // Refresh panier
+  refreshPanier();
+}
+
+function removeLigne(ligneId) {
+  const lignes = getLignes(STATE.editCommande).filter(l => l.id !== ligneId);
+  saveLignes(STATE.editCommande, lignes);
+  refreshPanier();
+}
+
+function updateQte(ligneId, delta) {
+  const lignes = getLignes(STATE.editCommande);
+  const l = lignes.find(x => x.id === ligneId);
+  if (!l) return;
+  l.qte = Math.max(1, (l.qte||1) + delta);
+  saveLignes(STATE.editCommande, lignes);
+  refreshPanier();
+}
+
+function toggleChip(ligneId, chip) {
+  const lignes = getLignes(STATE.editCommande);
+  const l = lignes.find(x => x.id === ligneId);
+  if (!l) return;
+  let chips = l.commentaire ? l.commentaire.split(' · ').filter(Boolean) : [];
+  if (chips.includes(chip)) {
+    chips = chips.filter(c => c !== chip);
+  } else {
+    chips.push(chip);
+  }
+  l.commentaire = chips.join(' · ');
+  // Sync textarea
+  const ta = document.querySelector(`#ligne-${ligneId} .comment-input`);
+  if (ta) ta.value = l.commentaire;
+  // Sync chips visuals
+  document.querySelectorAll(`#ligne-${ligneId} .chip`).forEach(el => {
+    el.classList.toggle('active', chips.includes(el.textContent));
+  });
+  saveLignes(STATE.editCommande, lignes);
+  updatePanierTotal();
+}
+
+function setCommentaire(ligneId, val) {
+  const lignes = getLignes(STATE.editCommande);
+  const l = lignes.find(x => x.id === ligneId);
+  if (l) {
+    // Fusionner commentaire libre avec chips actives
+    l.commentaire = val;
+    saveLignes(STATE.editCommande, lignes);
+  }
+}
+
+function refreshPanier() {
+  const lignes = getLignes(STATE.editCommande);
+  const container = document.getElementById('panier-lignes');
+  if (container) {
+    container.innerHTML = lignes.map(l => buildLigneHtml(l)).join('');
+  }
+  updatePanierTotal();
+  // Mettre à jour footer si besoin
+  const footer = document.getElementById('modal-footer');
+  if (footer) {
+    const hasLignes = lignes.length > 0;
+    const isNew = !STATE.commandes.find(c => c.id === STATE.editCommande.id);
+    const statut = STATE.editCommande.statut;
+    if (isNew || statut === 'brouillon') {
+      footer.innerHTML = hasLignes
+        ? '<button class="btn btn-primary" onclick="envoyerEnCuisine()">Envoyer en cuisine</button><button class="btn btn-success" onclick="encaisser()">Encaisser</button>'
+        : '<button class="btn btn-secondary" onclick="closeModal()">Fermer</button>';
+    }
+  }
+}
+
+function updatePanierTotal() {
+  const lignes = getLignes(STATE.editCommande);
+  const total = lignes.reduce((s,l) => s + (parseFloat(l.prix)||0) * (l.qte||1), 0);
+  const el = document.querySelector('.panier-total');
+  if (el) el.textContent = 'Total : ' + formatPrice(total);
+}
+
+// ============================================================
+// ACTIONS COMMANDE
+// ============================================================
+async function envoyerEnCuisine() {
+  const cmd = STATE.editCommande;
+  const lignes = getLignes(cmd);
+  if (lignes.length === 0) { showToast('Panier vide', 'error'); return; }
+  cmd.statut = 'ouverte';
+  cmd.sentAt = Date.now();
+  cmd.updatedAt = Date.now();
+  cmd.lockedBy = '';
+  saveLignes(cmd, lignes);
+
+  try {
+    const res = await enqueueWrite('saveCommande', cmd);
+    if (res && res.success) {
+      cmd.updatedAt = res.updatedAt;
+      showToast('Commande envoyée en cuisine', 'success');
+      closeModal();
+      await pollCommandes();
+    } else {
+      showToast('Erreur: ' + (res?.error || 'inconnue'), 'error');
+    }
+  } catch(e) { showToast('Connexion perdue', 'error'); }
+}
+
+async function encaisser() {
+  const cmd = STATE.editCommande;
+  const lignes = getLignes(cmd);
+  const total = lignes.reduce((s,l) => s + (parseFloat(l.prix)||0) * (l.qte||1), 0);
+  cmd.statut = 'payée';
+  cmd.total = total.toFixed(2);
+  cmd.updatedAt = Date.now();
+  cmd.lockedBy = '';
+  saveLignes(cmd, lignes);
+
+  try {
+    const res = await enqueueWrite('saveCommande', cmd);
+    if (res && res.success) {
+      showToast('Commande encaissée — ' + formatPrice(total), 'success');
+      closeModal();
+      await pollCommandes();
+    } else {
+      showToast('Erreur: ' + (res?.error || 'inconnue'), 'error');
+    }
+  } catch(e) { showToast('Connexion perdue', 'error'); }
+}
+
+async function ajouterLignesCommande() {
+  const cmd = STATE.editCommande;
+  const lignes = getLignes(cmd);
+  const nouvelles = lignes.filter(l => !l.addedAtSent);
+  if (nouvelles.length === 0) { showToast('Aucune nouvelle ligne', 'warning'); return; }
+  cmd.updatedAt = Date.now();
+  cmd.lockedBy = '';
+  try {
+    const res = await enqueueWrite('saveCommande', cmd);
+    if (res && res.success) {
+      cmd.updatedAt = res.updatedAt;
+      showToast('Lignes ajoutées', 'success');
+    } else {
+      showToast('Erreur', 'error');
+    }
+  } catch(e) { showToast('Connexion perdue', 'error'); }
+}
+
+// ============================================================
+// GESTION DEMANDES CLIENT
+// ============================================================
+async function validerDemandeClient(cmdId) {
+  const cmd = STATE.commandes.find(c => c.id === cmdId);
+  if (!cmd) return;
+  try {
+    const res = await enqueueWrite('validerCommandeClient', { id: cmdId });
+    if (res && res.success) {
+      showToast('Demande validée', 'success');
+      await pollCommandes();
+    }
+  } catch(e) { showToast('Erreur', 'error'); }
+}
+
+async function refuserDemandeClient(cmdId) {
+  try {
+    const res = await enqueueWrite('refuserCommandeClient', { id: cmdId });
+    if (res && res.success) {
+      showToast('Demande refusée', 'warning');
+      await pollCommandes();
+    }
+  } catch(e) { showToast('Erreur', 'error'); }
+}
+
+// ============================================================
+// MODAL OPEN / CLOSE
+// ============================================================
+function openModal() {
+  document.getElementById('modal-overlay').classList.add('active');
+}
+
+function closeModal() {
+  releaseModalLock();
+  document.getElementById('modal-overlay').classList.remove('active');
+  STATE.editCommande = null;
+}
+
+function closeModalOnBackdrop(e) {
+  if (e.target === document.getElementById('modal-overlay')) closeModal();
+}
+
+// ============================================================
+// VUE CUISINE & BAR
+// ============================================================
+function renderStation(station) {
+  const el = document.getElementById(station + '-content');
+  if (!el) return;
+
+  const now = Date.now();
+  const openCommandes = STATE.commandes.filter(c => c.statut === 'ouverte');
+
+  // Filtrer commandes ayant des lignes pour cette station
+  const relevant = openCommandes.filter(c =>
+    getLignes(c).some(l => l.station === station && l.statut !== 'servi')
+  );
+
+  if (relevant.length === 0) {
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)">Aucune commande en cours</div>';
+    return;
+  }
+
+  // Bandeau BATCH : regrouper les articles en_attente par nom
+  const batchMap = {};
+  relevant.forEach(c => {
+    getLignes(c).filter(l => l.station === station && l.statut === 'en_attente').forEach(l => {
+      const key = l.nom;
+      batchMap[key] = (batchMap[key] || 0) + (l.qte || 1);
+    });
+  });
+  let batchHtml = Object.entries(batchMap).map(([nom, qte]) =>
+    `<span class="batch-chip">${qte}× ${nom}</span>`
+  ).join('');
+
+  let html = '';
+  if (batchHtml) {
+    html += `<div class="batch-bandeau">
+      <div class="batch-title">En attente — récap</div>
+      <div class="batch-items">${batchHtml}</div>
+    </div>`;
+  }
+
+  relevant.forEach(c => {
+    const lignes = getLignes(c).filter(l => l.station === station && l.statut !== 'servi');
+    const ref = c.sentAt ? parseInt(c.sentAt) : parseInt(c.createdAt);
+    const elapsed = ref ? now - ref : 0;
+    const tClass = timerClass(elapsed, false);
+
+    const label = c.type === 'emporter'
+      ? 'Emporté #' + String(c.table).padStart(4,'0')
+      : 'Table ' + c.table;
+
+    html += `<div class="station-card">
+      <div class="station-card-header">
+        <strong style="font-size:14px">${label}</strong>
+        ${c.vip ? '<span class="badge badge-vip" style="font-size:10px">VIP</span>' : ''}
+        <span class="station-card-timer ${tClass}" data-station-timer="${c.id}">${formatTimer(elapsed)}</span>
+      </div>
+      <div>
+        ${lignes.map(l => buildStationLigne(c, l, station)).join('')}
+      </div>
+      <div style="padding:8px 12px">
+        <button class="btn btn-success" style="padding:8px;font-size:13px;width:100%"
+          onclick="marquerToutPret('${c.id}','${station}')">✓ Tout prêt</button>
+      </div>
+    </div>`;
+  });
+
+  el.innerHTML = html;
+  startStationTimers(station);
+  attachSwipeListeners();
+}
+
+function buildStationLigne(cmd, l, station) {
+  const now = Date.now();
+  const elapsed = l.addedAt ? now - parseInt(l.addedAt) : 0;
+  const tClass = timerClass(elapsed, true);
+  const isPret = l.statut === 'prêt';
+  const isRed = tClass === 'red' && !isPret;
+
+  return `<div class="station-ligne ${isPret ? 'pret' : ''} ${isRed ? 'blink-red' : ''}"
+    data-cmdid="${cmd.id}" data-ligneid="${l.id}"
+    ontouchstart="swipeStart(event)" ontouchmove="swipeMove(event)" ontouchend="swipeEnd(event,'${cmd.id}','${l.id}')">
+    <div class="swipe-indicator" id="swipe-${l.id}"></div>
+    <div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span class="ligne-qte">${l.qte||1}×</span>
+        <span class="ligne-nom">${l.nom}</span>
+      </div>
+      ${l.commentaire ? `<div class="ligne-comment">💬 ${l.commentaire}</div>` : ''}
+    </div>
+    <span class="ligne-timer ${tClass}">${formatTimer(elapsed)}</span>
+    ${isPret ? '<span style="color:var(--green);font-size:16px">✓</span>' : ''}
+  </div>`;
+}
+
+let stationTimerIntervals = {};
+function startStationTimers(station) {
+  if (stationTimerIntervals[station]) clearInterval(stationTimerIntervals[station]);
+  stationTimerIntervals[station] = setInterval(() => {
+    const now = Date.now();
+    document.querySelectorAll(`[data-station-timer]`).forEach(el => {
+      const cmdId = el.getAttribute('data-station-timer');
+      const cmd = STATE.commandes.find(c => c.id === cmdId);
+      if (!cmd) return;
+      const ref = cmd.sentAt ? parseInt(cmd.sentAt) : parseInt(cmd.createdAt);
+      if (!ref) return;
+      const elapsed = now - ref;
+      el.textContent = formatTimer(elapsed);
+      el.className = 'station-card-timer ' + timerClass(elapsed, false);
+    });
+    document.querySelectorAll('.ligne-timer').forEach(el => {
+      const ligne = el.closest('.station-ligne');
+      if (!ligne) return;
+      const ligneId = ligne.getAttribute('data-ligneid');
+      const cmdId = ligne.getAttribute('data-cmdid');
+      const cmd = STATE.commandes.find(c => c.id === cmdId);
+      if (!cmd) return;
+      const l = getLignes(cmd).find(x => x.id === ligneId);
+      if (!l || !l.addedAt) return;
+      const elapsed = now - parseInt(l.addedAt);
+      el.textContent = formatTimer(elapsed);
+      el.className = 'ligne-timer ' + timerClass(elapsed, true);
+    });
+  }, 1000);
+}
+
+// ============================================================
+// SWIPE POUR MARQUER PRÊT
+// ============================================================
+let swipeState = { startX: 0, startY: 0, target: null };
+
+function swipeStart(e) {
+  swipeState.startX = e.touches[0].clientX;
+  swipeState.startY = e.touches[0].clientY;
+  swipeState.target = e.currentTarget;
+}
+
+function swipeMove(e) {
+  const dx = e.touches[0].clientX - swipeState.startX;
+  const dy = Math.abs(e.touches[0].clientY - swipeState.startY);
+  if (dy > 30) return; // mouvement vertical → scroll
+  if (dx > 0) {
+    const ligneEl = e.currentTarget;
+    const ligneId = ligneEl.getAttribute('data-ligneid');
+    const indicator = document.getElementById('swipe-' + ligneId);
+    if (indicator) indicator.style.width = Math.min(dx, 120) + 'px';
+    e.preventDefault();
+  }
+}
+
+function swipeEnd(e, cmdId, ligneId) {
+  const dx = e.changedTouches[0].clientX - swipeState.startX;
+  const indicator = document.getElementById('swipe-' + ligneId);
+  if (indicator) indicator.style.width = '0';
+  if (dx > 80) {
+    marquerPretLigne(cmdId, ligneId);
+  }
+}
+
+function attachSwipeListeners() {
+  // Listeners are attached inline via ontouchstart/move/end attributes
+}
+
+async function marquerPretLigne(cmdId, ligneId) {
+  const cmd = STATE.commandes.find(c => c.id === cmdId);
+  if (!cmd) return;
+  const lignes = getLignes(cmd);
+  const l = lignes.find(x => x.id === ligneId);
+  if (!l || l.statut === 'prêt') return;
+  l.statut = 'prêt';
+  saveLignes(cmd, lignes);
+  cmd.updatedAt = Date.now();
+  try {
+    await enqueueWrite('saveCommande', cmd);
+    await pollCommandes();
+  } catch(e) { showToast('Erreur réseau', 'error'); }
+}
+
+async function marquerToutPret(cmdId, station) {
+  const cmd = STATE.commandes.find(c => c.id === cmdId);
+  if (!cmd) return;
+  const lignes = getLignes(cmd);
+  lignes.filter(l => l.station === station && l.statut === 'en_attente').forEach(l => l.statut = 'prêt');
+  saveLignes(cmd, lignes);
+  cmd.updatedAt = Date.now();
+  try {
+    await enqueueWrite('saveCommande', cmd);
+    showToast('Commande prête', 'success');
+    await pollCommandes();
+  } catch(e) { showToast('Erreur réseau', 'error'); }
+}
+
+async function marquerToutPretStation(station) {
+  const ouvertes = STATE.commandes.filter(c => c.statut === 'ouverte');
+  for (const cmd of ouvertes) {
+    const lignes = getLignes(cmd);
+    const pending = lignes.filter(l => l.station === station && l.statut === 'en_attente');
+    if (pending.length > 0) {
+      pending.forEach(l => l.statut = 'prêt');
+      saveLignes(cmd, lignes);
+      cmd.updatedAt = Date.now();
+      await enqueueWrite('saveCommande', cmd);
+    }
+  }
+  showToast('Tout marqué prêt', 'success');
+  await pollCommandes();
+}
+
+// ============================================================
+// MODAL RUPTURE
+// ============================================================
+function openRuptureModal(station) {
+  const items = STATE.menu.filter(m => m.station === station);
+  document.getElementById('modal-title').textContent = 'Gestion des ruptures';
+  const body = items.map(m => {
+    const isActif = m.actif;
+    return `<div class="rupture-item">
+      <span class="rupture-nom">${m.nom}</span>
+      <div class="toggle-switch ${isActif ? 'on' : 'off'}" onclick="toggleRupture('${m.id}')">
+        <div class="toggle-knob"></div>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('modal-body').innerHTML = body;
+  document.getElementById('modal-footer').innerHTML =
+    '<button class="btn btn-secondary" onclick="closeModal()">Fermer</button>';
+  openModal();
+}
+
+async function toggleRupture(menuId) {
+  const m = STATE.menu.find(x => x.id === menuId);
+  if (!m) return;
+  m.actif = !m.actif;
+  try {
+    await enqueueWrite('saveMenuArticle', { id: m.id, categorie: m.categorie, nom: m.nom, prix: m.prix, actif: m.actif, station: m.station });
+    // Refresh rupture modal
+    openRuptureModal(m.station);
+    showToast(m.actif ? 'Article disponible' : 'Article en rupture', m.actif ? 'success' : 'warning');
+  } catch(e) { showToast('Erreur', 'error'); m.actif = !m.actif; }
+}
+
+// ============================================================
+// VUE ADMIN
+// ============================================================
+function renderAdmin() {
+  const el = document.getElementById('admin-content');
+  if (!el) return;
+
+  const openCmds = STATE.commandes.filter(c => c.statut === 'ouverte');
+  const brouillons = STATE.commandes.filter(c => c.statut === 'brouillon');
+  const totalOuvert = openCmds.reduce((s,c) => {
+    return s + getLignes(c).reduce((ss,l) => ss + (parseFloat(l.prix)||0)*(l.qte||1), 0);
+  }, 0);
+  const paidToday = STATE.commandes.filter(c => c.statut === 'payée');
+  const caToday = paidToday.reduce((s,c) => s + (parseFloat(c.total)||0), 0);
+
+  let html = `
+    <div class="admin-section">
+      <div class="admin-section-title">Tableau de bord</div>
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-val">${openCmds.length}</div>
+          <div class="stat-label">Tables ouvertes</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val">${formatPrice(totalOuvert)}</div>
+          <div class="stat-label">En cours</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val">${paidToday.length}</div>
+          <div class="stat-label">Encaissées ce soir</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val">${formatPrice(caToday)}</div>
+          <div class="stat-label">CA ce soir</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="admin-section">
+      <div class="admin-section-title">Carte — Gestion articles</div>
+      <button class="btn btn-outline" style="width:100%;margin-bottom:12px" onclick="ouvrirFormulaireArticle(null)">+ Ajouter un article</button>
+      ${buildMenuAdminList()}
+    </div>
+
+    <div class="admin-section">
+      <div class="admin-section-title">Chips commentaires rapides</div>
+      ${buildChipsConfig()}
+    </div>
+
+    <div class="admin-section">
+      <div class="admin-section-title">Seuils chronomètre</div>
+      <div class="config-row">
+        <span class="config-label">Alerte orange (min)</span>
+        <input type="number" style="width:70px;text-align:center" id="seuil-orange" value="${STATE.config.seuilOrangeCommande}" onchange="saveSeuil('seuil_orange_commande',this.value)">
+      </div>
+      <div class="config-row">
+        <span class="config-label">Alerte rouge commande (min)</span>
+        <input type="number" style="width:70px;text-align:center" id="seuil-rouge-cmd" value="${STATE.config.seuilRougeCommande}" onchange="saveSeuil('seuil_rouge_commande',this.value)">
+      </div>
+      <div class="config-row">
+        <span class="config-label">Alerte rouge article (min)</span>
+        <input type="number" style="width:70px;text-align:center" id="seuil-rouge-art" value="${STATE.config.seuilRougeArticle}" onchange="saveSeuil('seuil_rouge_article',this.value)">
+      </div>
+    </div>
+
+    <div class="admin-section">
+      <div class="admin-section-title">Email récap nocturne</div>
+      <div class="form-group">
+        <label class="form-label">Destinataires (un par ligne)</label>
+        <textarea id="inp-emails" style="height:80px;resize:none">${(STATE.config.email_destinataires || []).join('\n')}</textarea>
+      </div>
+      <button class="btn btn-secondary" style="width:100%" onclick="saveEmails()">Enregistrer</button>
+    </div>
+
+    <div class="admin-section">
+      <div class="admin-section-title">Code PIN Admin</div>
+      <div class="form-group">
+        <label class="form-label">Nouveau PIN</label>
+        <input type="password" id="inp-new-pin" placeholder="Nouveau code PIN">
+      </div>
+      <button class="btn btn-secondary" style="width:100%" onclick="saveNewPin()">Changer le PIN</button>
+    </div>`;
+
+  el.innerHTML = html;
+}
+
+function buildMenuAdminList() {
+  const bycat = {};
+  STATE.menu.forEach(m => {
+    if (!bycat[m.categorie]) bycat[m.categorie] = [];
+    bycat[m.categorie].push(m);
+  });
+  return Object.entries(bycat).map(([cat, items]) => `
+    <details style="margin-bottom:6px">
+      <summary style="cursor:pointer;padding:8px;background:rgba(255,255,255,.04);border-radius:6px;font-size:13px;font-weight:500">${cat} (${items.length})</summary>
+      <div style="padding:4px 0">
+        ${items.map(m => `
+          <div class="menu-admin-item ${m.actif ? '' : 'inactive'}">
+            <div>
+              <div class="menu-admin-nom">${m.nom}</div>
+              <div class="menu-admin-cat">${m.station} — ${m.actif ? 'Disponible' : 'Rupture'}</div>
+            </div>
+            <span class="menu-admin-prix">${formatPrice(m.prix)}</span>
+            <button class="btn btn-secondary" style="padding:4px 10px;font-size:11px" onclick="ouvrirFormulaireArticle('${m.id}')">Modifier</button>
+          </div>`).join('')}
+      </div>
+    </details>`).join('');
+}
+
+function buildChipsConfig() {
+  const chips = STATE.config.chips || [];
+  const chipsHtml = chips.map((c,i) =>
+    `<div class="chip-config">${c}<span class="chip-config-del" onclick="deleteChip(${i})">✕</span></div>`
+  ).join('');
+  return `<div class="chips-config-list">${chipsHtml}</div>
+    <div style="display:flex;gap:8px">
+      <input type="text" id="inp-new-chip" placeholder="Nouveau chip…" style="flex:1">
+      <button class="btn btn-outline" style="flex-shrink:0;padding:8px 12px" onclick="addChip()">+</button>
+    </div>`;
+}
+
+function ouvrirFormulaireArticle(menuId) {
+  const m = menuId ? STATE.menu.find(x => x.id === menuId) : null;
+  const cats = [...new Set(STATE.menu.map(x => x.categorie))];
+  const catOptions = cats.map(c => `<option value="${c}" ${m && m.categorie===c?'selected':''}>${c}</option>`).join('');
+
+  document.getElementById('modal-title').textContent = m ? 'Modifier article' : 'Nouvel article';
+  document.getElementById('modal-body').innerHTML = `
+    <div class="form-group">
+      <label class="form-label">Nom</label>
+      <input type="text" id="fa-nom" value="${m ? m.nom : ''}">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Catégorie</label>
+      <select id="fa-cat">${catOptions}
+        <option value="__new__">+ Nouvelle catégorie…</option>
+      </select>
+    </div>
+    <div class="form-group" id="new-cat-group" style="display:none">
+      <label class="form-label">Nom de la nouvelle catégorie</label>
+      <input type="text" id="fa-newcat">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Prix (€)</label>
+      <input type="number" id="fa-prix" step="0.5" value="${m ? m.prix : ''}">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Station</label>
+      <select id="fa-station">
+        <option value="cuisine" ${!m || m.station==='cuisine'?'selected':''}>Cuisine</option>
+        <option value="bar" ${m && m.station==='bar'?'selected':''}>Bar</option>
+      </select>
+    </div>
+    ${m ? `<div style="display:flex;align-items:center;gap:10px;padding:8px 0">
+      <label class="form-label" style="margin:0;flex:1">Article disponible</label>
+      <input type="checkbox" id="fa-actif" ${m.actif?'checked':''} style="width:auto">
+    </div>` : ''}`;
+
+  // Écouter changement catégorie pour afficher champ nouvelle catégorie
+  setTimeout(() => {
+    const sel = document.getElementById('fa-cat');
+    if (sel) sel.addEventListener('change', e => {
+      document.getElementById('new-cat-group').style.display = e.target.value === '__new__' ? '' : 'none';
+    });
+  }, 100);
+
+  document.getElementById('modal-footer').innerHTML = `
+    <button class="btn btn-secondary" onclick="closeModal()">Annuler</button>
+    <button class="btn btn-primary" onclick="saveArticleForm('${menuId || ''}')">Enregistrer</button>`;
+  openModal();
+}
+
+async function saveArticleForm(menuId) {
+  const nom = document.getElementById('fa-nom')?.value?.trim();
+  const catSel = document.getElementById('fa-cat')?.value;
+  const cat = catSel === '__new__' ? document.getElementById('fa-newcat')?.value?.trim() : catSel;
+  const prix = parseFloat(document.getElementById('fa-prix')?.value);
+  const station = document.getElementById('fa-station')?.value;
+  const actif = menuId ? (document.getElementById('fa-actif')?.checked !== false) : true;
+
+  if (!nom || !cat || isNaN(prix)) { showToast('Remplissez tous les champs', 'error'); return; }
+
+  const data = { nom, categorie: cat, prix, station, actif };
+  if (menuId) data.id = menuId;
+
+  try {
+    const res = await enqueueWrite('saveMenuArticle', data);
+    if (res && res.success) {
+      showToast('Article enregistré', 'success');
+      closeModal();
+      // Recharger le menu
+      const menuRes = await apiGet('getMenu');
+      if (menuRes.menu) {
+        STATE.menu = menuRes.menu;
+        STATE.categories = [...new Set(STATE.menu.map(m => m.categorie))];
+      }
+      renderAdmin();
+    } else {
+      showToast('Erreur: ' + (res?.error || ''), 'error');
+    }
+  } catch(e) { showToast('Connexion perdue', 'error'); }
+}
+
+async function deleteChip(idx) {
+  const chips = [...(STATE.config.chips || [])];
+  chips.splice(idx, 1);
+  STATE.config.chips = chips;
+  await enqueueWrite('saveConfig', { key: 'chips_commentaires', value: chips });
+  renderAdmin();
+}
+
+async function addChip() {
+  const inp = document.getElementById('inp-new-chip');
+  if (!inp || !inp.value.trim()) return;
+  const chips = [...(STATE.config.chips || [])];
+  chips.push(inp.value.trim());
+  inp.value = '';
+  STATE.config.chips = chips;
+  await enqueueWrite('saveConfig', { key: 'chips_commentaires', value: chips });
+  renderAdmin();
+}
+
+async function saveSeuil(key, val) {
+  const v = parseInt(val);
+  if (isNaN(v)) return;
+  if (key === 'seuil_orange_commande') STATE.config.seuilOrangeCommande = v;
+  if (key === 'seuil_rouge_commande') STATE.config.seuilRougeCommande = v;
+  if (key === 'seuil_rouge_article') STATE.config.seuilRougeArticle = v;
+  await enqueueWrite('saveConfig', { key, value: v });
+}
+
+async function saveEmails() {
+  const val = document.getElementById('inp-emails')?.value || '';
+  const emails = val.split('\n').map(e => e.trim()).filter(Boolean);
+  STATE.config.email_destinataires = emails;
+  await enqueueWrite('saveConfig', { key: 'email_destinataires', value: emails });
+  showToast('Emails enregistrés', 'success');
+}
+
+async function saveNewPin() {
+  const inp = document.getElementById('inp-new-pin');
+  if (!inp || !inp.value) { showToast('Entrez un PIN', 'error'); return; }
+  await enqueueWrite('saveConfig', { key: 'admin_pin', value: inp.value });
+  inp.value = '';
+  showToast('PIN mis à jour', 'success');
+}
+
+function deconnecterAdmin() {
+  STATE.adminUnlocked = false;
+  showView('service');
+}
+
+// ============================================================
+// PIN MODAL
+// ============================================================
+let pinInput = '';
+
+function showPinModal() {
+  pinInput = '';
+  updatePinDisplay();
+  document.getElementById('modal-pin').classList.add('active');
+}
+
+function hidePinModal() {
+  document.getElementById('modal-pin').classList.remove('active');
+}
+
+function pinPress(d) {
+  if (pinInput.length >= 8) return;
+  pinInput += d;
+  updatePinDisplay();
+  if (pinInput.length >= 4) verifyPin();
+}
+
+function pinClear() {
+  pinInput = pinInput.slice(0, -1);
+  updatePinDisplay();
+}
+
+function pinCancel() {
+  pinInput = '';
+  hidePinModal();
+}
+
+function updatePinDisplay() {
+  const el = document.getElementById('pin-display');
+  if (el) el.textContent = '●'.repeat(pinInput.length) || '·  ·  ·  ·';
+}
+
+async function verifyPin() {
+  if (!CONFIG.APPS_SCRIPT_URL) {
+    // Mode dev : PIN = 0000
+    if (pinInput === '0000') { unlockAdmin(); return; }
+    if (pinInput.length >= 4) { showPinError(); }
+    return;
+  }
+  try {
+    const res = await apiPostRaw('verifierPin', { pin: pinInput });
+    if (res && res.valid) {
+      unlockAdmin();
+    } else if (pinInput.length >= 4) {
+      showPinError();
+    }
+  } catch(e) { showToast('Erreur connexion', 'error'); }
+}
+
+function unlockAdmin() {
+  STATE.adminUnlocked = true;
+  pinInput = '';
+  hidePinModal();
+  showView('admin');
+}
+
+function showPinError() {
+  const el = document.getElementById('pin-error');
+  if (el) el.textContent = 'Code incorrect';
+  pinInput = '';
+  updatePinDisplay();
+  setTimeout(() => { if (el) el.textContent = ''; }, 2000);
+}
+
+// ============================================================
+// INITIALISATION
+// ============================================================
+async function init() {
+  STATE.terminalId = getTerminalId();
+
+  if (!CONFIG.APPS_SCRIPT_URL) {
+    showToast('URL Apps Script non configurée — mode démo', 'warning');
+    renderService();
+    return;
+  }
+
+  // Charger menu + config en parallèle
+  try {
+    const [menuRes, configRes] = await Promise.all([
+      apiGet('getMenu'),
+      apiGet('getConfig'),
+    ]);
+
+    if (menuRes.menu) {
+      STATE.menu = menuRes.menu;
+      STATE.categories = [...new Set(STATE.menu.map(m => m.categorie))];
+    }
+
+    if (configRes.config) {
+      const c = configRes.config;
+      if (c.chips_commentaires) STATE.config.chips = c.chips_commentaires;
+      if (c.seuil_orange_commande) STATE.config.seuilOrangeCommande = parseInt(c.seuil_orange_commande);
+      if (c.seuil_rouge_commande) STATE.config.seuilRougeCommande = parseInt(c.seuil_rouge_commande);
+      if (c.seuil_rouge_article) STATE.config.seuilRougeArticle = parseInt(c.seuil_rouge_article);
+      if (c.email_destinataires) STATE.config.email_destinataires = c.email_destinataires;
+    }
+    setOnline(true);
+  } catch(e) {
+    setOnline(false);
+    showToast('Impossible de charger les données', 'error');
+  }
+
+  await requestWakeLock();
+  startPolling();
+  renderService();
+}
+
+document.addEventListener('DOMContentLoaded', init);
+// Réactiver Wake Lock si page reprend le focus
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) requestWakeLock();
+});
+</script>
+</body>
+</html>
