@@ -530,9 +530,11 @@ h1,h2,h3{font-family:'Cormorant Garamond',serif;font-weight:600}
 <div id="banner-offline" class="banner-offline">⚠ Connexion perdue — Vérifiez votre Wi-Fi</div>
 
 <!-- Debug panel -->
-<div id="debug-wrap" style="position:fixed;bottom:60px;left:0;right:0;z-index:9999;display:block;">
-  <button onclick="toggleDebug()" style="background:#222;color:#0f0;font-size:11px;padding:3px 8px;border:none;width:100%;text-align:left;">🐛 DEBUG (appuyer pour masquer)</button>
-  <div id="debug-panel" style="background:#111;color:#0f0;font-family:monospace;font-size:10px;max-height:180px;overflow-y:auto;padding:4px;"></div>
+<div style="position:fixed;bottom:60px;left:0;right:0;z-index:9999;">
+  <button onclick="toggleDebug()" style="background:#222;color:#0f0;font-size:11px;padding:3px 8px;border:none;width:100%;text-align:left;">🐛 DEBUG</button>
+  <div id="debug-wrap" style="display:block;">
+    <div id="debug-panel" style="background:#111;color:#0f0;font-family:monospace;font-size:10px;max-height:180px;overflow-y:auto;padding:4px;"></div>
+  </div>
 </div>
 
 <!-- Toast container -->
