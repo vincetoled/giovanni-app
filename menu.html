@@ -355,7 +355,7 @@ async function apiGet(action, params = {}) {
 async function apiPost(action, data) {
   return apiFetch(CONFIG.APPS_SCRIPT_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'text/plain' },
     body: JSON.stringify({ action, data }),
   });
 }
