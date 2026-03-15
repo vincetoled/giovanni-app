@@ -522,6 +522,219 @@ h1,h2,h3{font-family:'Cormorant Garamond',serif;font-weight:600}
   animation:pulsePret 1.2s ease-in-out infinite;
 }
 @keyframes pulsePret{0%,100%{box-shadow:0 0 0 0 rgba(76,175,125,.4)}50%{box-shadow:0 0 0 6px rgba(76,175,125,0)}}
+
+/* ============================================================
+   CONFIRMATION POPUP CUISINE (tap + confirm)
+   ============================================================ */
+#confirm-popup-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.65);
+  z-index:500;display:none;align-items:center;justify-content:center;padding:24px;
+}
+#confirm-popup-overlay.active{display:flex}
+.confirm-popup{
+  background:#FDFAF5;border-radius:14px;
+  padding:24px;width:100%;max-width:340px;
+  box-shadow:0 20px 60px rgba(0,0,0,.5);
+  color:#2C1F0E;
+}
+.confirm-popup-title{
+  font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;
+  color:#2C1F0E;margin-bottom:8px;
+}
+.confirm-popup-detail{
+  font-size:13px;color:#7A6E5F;margin-bottom:20px;line-height:1.5;
+}
+.confirm-popup-list{
+  font-size:13px;color:#2C1F0E;margin-bottom:20px;
+  padding-left:0;list-style:none;
+}
+.confirm-popup-list li{margin-bottom:4px;padding-left:14px;position:relative}
+.confirm-popup-list li::before{content:'•';position:absolute;left:0;color:#7A6E5F}
+.confirm-popup-btns{display:flex;gap:10px;margin-top:20px}
+.confirm-popup-cancel{
+  flex:1;padding:12px;border-radius:8px;
+  border:1px solid #7A6E5F;color:#7A6E5F;
+  font-size:14px;font-weight:600;background:transparent;
+  font-family:'DM Sans',sans-serif;cursor:pointer;
+}
+.confirm-popup-ok{
+  flex:1;padding:12px;border-radius:8px;
+  background:#6B8C3A;color:#fff;
+  font-size:14px;font-weight:600;border:none;
+  font-family:'DM Sans',sans-serif;cursor:pointer;
+}
+
+/* ============================================================
+   STATION CARD HEADER — 4 niveaux couleur (cuisine)
+   ============================================================ */
+.station-card-header{background:#1E1A14;color:#F5F0E8}
+.station-card-header.sh-attention{background:#3A2800;color:#F5F0E8}
+.station-card-header.sh-urgent{background:rgba(192,82,42,.6);color:#fff}
+.station-card-header.sh-critique{
+  background:#C0522A;color:#fff;
+  animation:pulseHeader 2s ease-in-out infinite;
+}
+@keyframes pulseHeader{0%,100%{opacity:1}50%{opacity:.82}}
+.sct-normal{color:#6B8C3A}
+.sct-attention{color:#D4831A}
+.sct-urgent{color:#C0522A}
+.sct-critique{color:#fff}
+
+/* ============================================================
+   ALLERGIE BANDEAU (Cuisine)
+   ============================================================ */
+.allergie-bandeau{
+  background:#C0522A;color:#fff;
+  padding:8px 12px;font-size:12px;font-weight:600;
+  display:flex;align-items:center;gap:6px;
+}
+
+/* ============================================================
+   BURGER WARNING BANNER (Service)
+   ============================================================ */
+.burger-warning{
+  background:rgba(201,168,76,.08);
+  border:1px solid rgba(201,168,76,.25);
+  border-radius:6px;margin-top:8px;
+  padding:6px 10px;
+  display:flex;align-items:flex-start;gap:8px;
+  font-size:12px;color:#7A6E5F;font-style:italic;line-height:1.4;
+}
+.burger-warning-close{
+  margin-left:auto;color:#7A6E5F;font-size:14px;
+  background:none;border:none;cursor:pointer;padding:0 2px;
+  font-family:'DM Sans',sans-serif;flex-shrink:0;
+}
+
+/* ============================================================
+   PHASES CRÉATION COMMANDE
+   ============================================================ */
+.phase-stepper{
+  display:flex;align-items:center;padding:10px 0 4px;
+  border-bottom:1px solid var(--border);margin-bottom:4px;flex-shrink:0;
+}
+.phase-step{
+  flex:1;text-align:center;font-size:11px;
+  color:var(--text-muted);padding-bottom:8px;
+  position:relative;
+}
+.phase-step.active{color:var(--or);font-weight:600}
+.phase-step.done{color:var(--green)}
+.phase-step::after{
+  content:'';position:absolute;bottom:0;left:50%;
+  transform:translateX(-50%);
+  width:7px;height:7px;border-radius:50%;
+  background:var(--text-muted);
+}
+.phase-step.active::after{background:var(--or)}
+.phase-step.done::after{background:var(--green)}
+
+/* Phase 1 — type buttons */
+.phase1-btns{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:16px 0}
+.phase1-btn{
+  background:rgba(255,255,255,.05);border:1px solid var(--border);
+  border-radius:12px;padding:24px 12px;
+  display:flex;flex-direction:column;align-items:center;gap:10px;
+  font-size:15px;font-weight:500;color:var(--text);
+  transition:all .15s;cursor:pointer;font-family:'DM Sans',sans-serif;
+}
+.phase1-btn:active,.phase1-btn.selected{
+  background:rgba(201,168,76,.15);border-color:var(--border-active);color:var(--or);
+}
+.phase1-btn .p1-icon{font-size:36px}
+
+/* Phase 2 — grille tables */
+.phase-tables-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:8px;
+  padding:10px 0;
+}
+.phase-table-tile{
+  border-radius:10px;padding:10px 6px;
+  text-align:center;cursor:pointer;
+  font-size:18px;font-weight:700;
+  font-family:'Cormorant Garamond',serif;
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  border:1px solid transparent;transition:all .15s;
+  min-height:62px;justify-content:center;
+}
+.phase-table-tile .tile-sub{
+  font-family:'DM Mono',monospace;
+  font-size:10px;font-weight:400;opacity:.85;
+}
+.phase-table-tile.libre{
+  background:rgba(107,140,58,.1);border-color:rgba(107,140,58,.2);color:#6B8C3A;
+}
+.phase-table-tile.occupee{
+  background:rgba(201,168,76,.12);border-color:rgba(201,168,76,.25);color:#C9A84C;
+}
+.phase-table-tile:active{opacity:.75}
+
+/* Phase 3 — couverts tiles */
+.couverts-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:8px;
+  padding:8px 0;
+}
+.couvert-tile{
+  border-radius:10px;padding:14px 8px;
+  text-align:center;cursor:pointer;
+  font-size:22px;font-weight:700;
+  background:rgba(92,107,58,.08);border:1px solid transparent;
+  transition:all .15s;color:var(--text);font-family:'DM Sans',sans-serif;
+}
+.couvert-tile:active,.couvert-tile.selected{
+  background:#5C6B3A;color:#fff;border-color:#5C6B3A;
+}
+
+/* Phase 3.5 — allergies / apéritif */
+.phase35-q{padding:14px 0;border-bottom:1px solid var(--border)}
+.phase35-q:last-child{border-bottom:none}
+.phase35-label{font-size:14px;font-weight:600;margin-bottom:10px;color:var(--text)}
+.phase35-btns{display:flex;gap:8px}
+.phase35-btn{
+  flex:1;padding:12px;border-radius:8px;border:1px solid var(--border);
+  font-size:14px;font-weight:500;cursor:pointer;
+  background:rgba(255,255,255,.05);color:var(--text);
+  font-family:'DM Sans',sans-serif;transition:all .15s;
+}
+.phase35-btn.oui{border-color:var(--or);color:var(--or);background:rgba(201,168,76,.1)}
+.allergy-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.allergy-chip{
+  padding:5px 12px;border-radius:20px;font-size:12px;
+  background:rgba(255,255,255,.06);border:1px solid var(--border);
+  cursor:pointer;transition:all .15s;color:var(--text-muted);
+}
+.allergy-chip.active{
+  background:rgba(192,82,42,.2);color:var(--terre);border-color:var(--terre);
+}
+
+/* Search bar — articles */
+.article-search{position:relative;margin-bottom:8px;flex-shrink:0}
+.article-search input{
+  padding-left:36px;background:rgba(255,255,255,.05);
+  border:1px solid var(--border);border-radius:10px;
+  font-size:14px;color:var(--text);
+}
+.article-search input:focus{border-color:var(--or)}
+.search-icon{
+  position:absolute;left:12px;top:50%;transform:translateY(-50%);
+  color:var(--text-muted);font-size:14px;pointer-events:none;
+}
+.search-results{
+  background:rgba(255,255,255,.04);
+  border:1px solid var(--border);border-radius:10px;
+  overflow:hidden;margin-bottom:8px;
+}
+.search-result-item{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.04);
+  cursor:pointer;gap:10px;
+}
+.search-result-item:last-child{border-bottom:none}
+.search-result-item:active{background:rgba(201,168,76,.1)}
+.search-result-info{flex:1;min-width:0}
+.search-result-nom{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.search-result-cat{font-size:11px;color:var(--text-muted);font-style:italic}
+.search-result-prix{font-size:13px;color:var(--or);font-weight:600;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -633,6 +846,11 @@ h1,h2,h3{font-family:'Cormorant Garamond',serif;font-weight:600}
   </div>
 </div>
 
+<!-- Confirm Popup Overlay (Cuisine tap+confirm) -->
+<div id="confirm-popup-overlay" onclick="closeConfirmPopup(event)">
+  <div class="confirm-popup" id="confirm-popup-box"></div>
+</div>
+
 <!-- Modal PIN Admin -->
 <div id="modal-pin" class="modal-overlay" style="align-items:center;padding:24px">
   <div style="background:var(--bg-modal);border-radius:var(--radius);padding:24px;width:100%;max-width:320px">
@@ -694,6 +912,7 @@ let STATE = {
   audioEnabled: false,
   audioCtx: null,
   wakeLock: null,
+  burgerWarnings: new Set(),
   // Edit modal state
   editCommande: null,
   editCatFilter: null,
@@ -1134,6 +1353,13 @@ function renderTableCard(c) {
 
   const totalItems = lignes.reduce((s,l) => s + (l.qte||1), 0);
 
+  const burgerBanner = STATE.burgerWarnings.has(c.id)
+    ? `<div class="burger-warning" id="burger-warning-${c.id}">
+        <span>⏱ Cette commande contient un burger — pensez à prévenir le client que la préparation peut prendre plus de temps.</span>
+        <button class="burger-warning-close" onclick="event.stopPropagation();closeBurgerWarning('${c.id}')">✕</button>
+       </div>`
+    : '';
+
   return `<div class="${cardClass}" onclick="openModalEditCommande('${c.id}')" data-cmdid="${c.id}" data-sentAt="${c.sentAt || c.createdAt}">
     <div style="display:flex;align-items:flex-start;justify-content:space-between">
       <div class="table-num">${c.table}</div>
@@ -1144,6 +1370,7 @@ function renderTableCard(c) {
       <div class="table-info">${totalItems} article${totalItems > 1 ? 's' : ''}</div>
       ${tStr ? `<div class="table-timer ${tClass}" data-timer="${c.id}">${tStr}</div>` : ''}
     </div>
+    ${burgerBanner}
   </div>`;
 }
 
@@ -1200,78 +1427,170 @@ function startServiceTimers() {
 }
 
 // ============================================================
-// MODAL NOUVELLE COMMANDE
+// MODAL NOUVELLE COMMANDE — FLUX 4 PHASES
 // ============================================================
 function openModalNewCommande() {
-  STATE.editCommande = { id: null, type: 'sur_place', lignes: [], statut: 'brouillon' };
-  showModalStep1();
+  STATE.editCommande = { id: null, type: 'sur_place', lignes: [], statut: 'brouillon', couverts: '', vip: false, allergie: '', aperitif: false };
+  showModalPhase1();
 }
 
 function openModalNewCommandeEmporter() {
-  STATE.editCommande = { id: null, type: 'emporter', lignes: [], statut: 'brouillon' };
-  showModalStep1Emporter();
+  STATE.editCommande = { id: null, type: 'emporter', lignes: [], statut: 'brouillon', couverts: '', vip: false, allergie: '', aperitif: false };
+  showModalPhase3Couverts();
 }
 
-function showModalStep1() {
+function _phaseStepperHtml(active) {
+  const steps = ['Type','Table','Couverts','Articles'];
+  return '<div class="phase-stepper">' + steps.map((s,i) => {
+    const cls = i < active ? 'done' : (i === active ? 'active' : '');
+    return `<div class="phase-step ${cls}">${s}</div>`;
+  }).join('') + '</div>';
+}
+
+// Phase 1 — type de commande
+function showModalPhase1() {
   document.getElementById('modal-title').textContent = 'Nouvelle commande';
-  document.getElementById('modal-body').innerHTML = `
-    <div class="type-choice">
-      <button class="type-btn selected" onclick="selectType('sur_place')">
-        <span class="type-icon">🪑</span>Sur place
+  document.getElementById('modal-body').innerHTML =
+    _phaseStepperHtml(0) +
+    `<div class="phase1-btns">
+      <button class="phase1-btn" onclick="STATE.editCommande.type='sur_place';showModalPhase2Tables()">
+        <span class="p1-icon">🪑</span>Sur place
       </button>
-      <button class="type-btn" onclick="selectType('emporter')">
-        <span class="type-icon">🥡</span>À emporter
+      <button class="phase1-btn" onclick="STATE.editCommande.type='emporter';showModalPhase3Couverts()">
+        <span class="p1-icon">🥡</span>À emporter
       </button>
-    </div>
-    <div id="type-form"></div>`;
-  document.getElementById('modal-footer').innerHTML =
-    '<button class="btn btn-primary" onclick="confirmerTypeCommande()">Continuer →</button>';
-  selectType('sur_place');
+    </div>`;
+  document.getElementById('modal-footer').innerHTML = '';
   openModal();
 }
 
-function showModalStep1Emporter() {
-  STATE.editCommande.type = 'emporter';
-  showModalStep1();
-  selectType('emporter');
+// Phase 2 — sélection de table
+function showModalPhase2Tables() {
+  const maxTables = parseInt(STATE.config.nbTables || 20);
+  let tilesHtml = '';
+  for (let i = 1; i <= maxTables; i++) {
+    const existing = STATE.commandes.find(c =>
+      (c.statut === 'ouverte' || c.statut === 'brouillon') && String(c.table) === String(i)
+    );
+    if (existing) {
+      const ref = existing.sentAt ? parseInt(existing.sentAt) : parseInt(existing.createdAt);
+      const elapsed = ref ? Date.now() - ref : 0;
+      tilesHtml += `<div class="phase-table-tile occupee" onclick="openModalEditCommande('${existing.id}');closeModal()">
+        ${i}<div class="tile-sub">${formatTimer(elapsed)}</div>
+      </div>`;
+    } else {
+      tilesHtml += `<div class="phase-table-tile libre" onclick="STATE.editCommande.table='${i}';showModalPhase3Couverts()">
+        ${i}<div class="tile-sub">Libre</div>
+      </div>`;
+    }
+  }
+  document.getElementById('modal-title').textContent = 'Sélectionner une table';
+  document.getElementById('modal-body').innerHTML =
+    _phaseStepperHtml(1) +
+    `<div class="phase-tables-grid">${tilesHtml}</div>`;
+  document.getElementById('modal-footer').innerHTML =
+    `<button class="btn btn-secondary" onclick="showModalPhase1()">← Retour</button>`;
 }
 
-function selectType(t) {
-  STATE.editCommande.type = t;
-  document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected'));
-  const btns = document.querySelectorAll('.type-btn');
-  btns.forEach(b => { if (b.textContent.includes(t === 'sur_place' ? 'place' : 'porter')) b.classList.add('selected'); });
+// Phase 3 — couverts
+function showModalPhase3Couverts() {
+  const isEmporter = STATE.editCommande.type === 'emporter';
+  let tilesHtml = '';
+  for (let i = 1; i <= 8; i++) {
+    tilesHtml += `<div class="couvert-tile" onclick="STATE.editCommande.couverts='${i}';showModalPhase35()">${i}</div>`;
+  }
+  document.getElementById('modal-title').textContent = isEmporter
+    ? 'Nouvel emporté'
+    : 'Table ' + (STATE.editCommande.table || '');
+  document.getElementById('modal-body').innerHTML =
+    _phaseStepperHtml(2) +
+    `<div style="font-size:13px;color:var(--text-muted);padding:8px 0 4px">Nombre de couverts</div>
+    <div class="couverts-grid">${tilesHtml}</div>
+    <button class="couvert-tile" style="width:100%;border-radius:10px;margin-top:4px;font-size:14px;font-weight:500;padding:14px;background:rgba(255,255,255,.05);border:1px solid var(--border)"
+      onclick="askAutreCouverts()">Autre…</button>`;
+  document.getElementById('modal-footer').innerHTML =
+    `<button class="btn btn-secondary" onclick="${isEmporter ? 'showModalPhase1()' : 'showModalPhase2Tables()'}" >← Retour</button>
+     <button class="btn btn-outline" onclick="STATE.editCommande.couverts='';showModalPhase35()">Passer →</button>`;
+}
 
-  const form = document.getElementById('type-form');
-  if (t === 'sur_place') {
-    form.innerHTML = `
-      <div class="form-group">
-        <label class="form-label">Numéro de table</label>
-        <input type="number" id="inp-table" min="1" max="99" placeholder="ex: 5" style="font-size:20px;text-align:center">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Couverts (optionnel)</label>
-        <input type="number" id="inp-couverts" min="1" placeholder="Nombre de personnes">
-      </div>
-      <div style="display:flex;align-items:center;gap:10px;padding:10px 0">
-        <label class="form-label" style="margin:0;flex:1">Table VIP</label>
-        <input type="checkbox" id="inp-vip" style="width:auto">
-      </div>`;
-  } else {
-    form.innerHTML = `<div style="text-align:center;padding:20px 0;color:var(--text-muted);font-size:13px">
-      Ticket numéro #${String(STATE.ticketCounter + 1).padStart(4,'0')} sera assigné automatiquement
-    </div>`;
+function askAutreCouverts() {
+  const val = prompt('Nombre de couverts :');
+  if (val && parseInt(val) > 0) {
+    STATE.editCommande.couverts = val;
+    showModalPhase35();
   }
 }
 
-function confirmerTypeCommande() {
-  if (STATE.editCommande.type === 'sur_place') {
-    const t = document.getElementById('inp-table');
-    if (!t || !t.value) { showToast('Entrez un numéro de table', 'error'); return; }
-    STATE.editCommande.table = t.value;
-    STATE.editCommande.couverts = document.getElementById('inp-couverts')?.value || '';
-    STATE.editCommande.vip = document.getElementById('inp-vip')?.checked || false;
+// Phase 3.5 — allergies + apéritif
+let _phase35State = { allergie: false, selectedAllergies: [], aperitif: false };
+
+function showModalPhase35() {
+  _phase35State = { allergie: false, selectedAllergies: [], aperitif: false };
+  const allergies = ['Gluten','Lactose','Fruits à coque','Crustacés','Autre'];
+  const allergyChips = allergies.map(a =>
+    `<div class="allergy-chip" id="achip-${a}" onclick="toggleAllergyChip('${a}')">${a}</div>`
+  ).join('');
+
+  document.getElementById('modal-title').textContent = 'Avant de commencer…';
+  document.getElementById('modal-body').innerHTML =
+    _phaseStepperHtml(2) +
+    `<div class="phase35-q">
+      <div class="phase35-label">🌿 Allergies à signaler ?</div>
+      <div class="phase35-btns">
+        <button class="phase35-btn" id="btn-allergie-non" onclick="setAllergie(false)">Non / Passer</button>
+        <button class="phase35-btn oui" id="btn-allergie-oui" onclick="setAllergie(true)">Oui</button>
+      </div>
+      <div id="allergie-detail" style="display:none">
+        <div class="allergy-chips">${allergyChips}</div>
+        <input id="allergie-libre" class="comment-input" style="margin-top:8px" placeholder="Préciser (optionnel)…">
+      </div>
+    </div>
+    <div class="phase35-q">
+      <div class="phase35-label">🥂 Apéritif pour commencer ?</div>
+      <div class="phase35-btns">
+        <button class="phase35-btn" id="btn-aper-non" onclick="setAperitif(false)">Non / Passer</button>
+        <button class="phase35-btn oui" id="btn-aper-oui" onclick="setAperitif(true)">Oui</button>
+      </div>
+    </div>`;
+  document.getElementById('modal-footer').innerHTML =
+    `<button class="btn btn-secondary" onclick="showModalPhase3Couverts()">← Retour</button>
+     <button class="btn btn-primary" onclick="finaliserPhase35()">Continuer →</button>`;
+}
+
+function setAllergie(yes) {
+  _phase35State.allergie = yes;
+  document.getElementById('btn-allergie-oui').classList.toggle('selected', yes);
+  document.getElementById('btn-allergie-non').classList.toggle('selected', !yes);
+  document.getElementById('allergie-detail').style.display = yes ? 'block' : 'none';
+}
+
+function setAperitif(yes) {
+  _phase35State.aperitif = yes;
+  document.getElementById('btn-aper-oui').classList.toggle('selected', yes);
+  document.getElementById('btn-aper-non').classList.toggle('selected', !yes);
+}
+
+function toggleAllergyChip(a) {
+  const chips = _phase35State.selectedAllergies;
+  const idx = chips.indexOf(a);
+  if (idx >= 0) chips.splice(idx, 1);
+  else chips.push(a);
+  document.getElementById('achip-' + a)?.classList.toggle('active', idx < 0);
+}
+
+function finaliserPhase35() {
+  if (_phase35State.allergie) {
+    const libre = document.getElementById('allergie-libre')?.value || '';
+    const parts = [..._phase35State.selectedAllergies];
+    if (libre) parts.push(libre);
+    STATE.editCommande.allergie = parts.join(', ') || 'Oui';
   } else {
+    STATE.editCommande.allergie = '';
+  }
+  STATE.editCommande.aperitif = _phase35State.aperitif;
+
+  // Finaliser la commande
+  if (STATE.editCommande.type === 'emporter') {
     STATE.ticketCounter++;
     localStorage.setItem('gio_ticket', STATE.ticketCounter);
     STATE.editCommande.table = STATE.ticketCounter;
@@ -1280,7 +1599,13 @@ function confirmerTypeCommande() {
   STATE.editCommande.createdAt = Date.now();
   STATE.editCommande.updatedAt = Date.now();
   STATE.editCommande.source = 'service';
-  STATE.editCatFilter = STATE.categories[0] || null;
+
+  // Catégorie par défaut : Apéritifs si aperitif=true, sinon première catégorie
+  if (_phase35State.aperitif) {
+    STATE.editCatFilter = STATE.categories.find(c => c.toLowerCase().includes('apéritif')) || STATE.categories[0] || null;
+  } else {
+    STATE.editCatFilter = STATE.categories[0] || null;
+  }
   showModalArticles();
 }
 
@@ -1351,6 +1676,12 @@ function showModalArticles() {
   let panierHtml = lignes.map(l => buildLigneHtml(l)).join('');
 
   document.getElementById('modal-body').innerHTML = `
+    <div class="article-search">
+      <span class="search-icon">🔍</span>
+      <input type="search" placeholder="Rechercher un article… (3 lettres min)"
+        oninput="searchArticles(this.value)" autocomplete="off">
+    </div>
+    <div id="search-results-box"></div>
     <div class="cats-scroll">${catsHtml}</div>
     <div class="articles-grid">${articlesHtml}</div>
     <div class="panier-section">
@@ -1407,6 +1738,37 @@ function buildLigneHtml(l) {
 function filterCat(cat) {
   STATE.editCatFilter = cat;
   showModalArticles();
+}
+
+function searchArticles(query) {
+  const box = document.getElementById('search-results-box');
+  if (!box) return;
+  const q = query.trim().toLowerCase();
+  if (q.length < 3) {
+    box.innerHTML = '';
+    box.style.display = 'none';
+    document.querySelector('.cats-scroll').style.display = '';
+    document.querySelector('.articles-grid').style.display = '';
+    return;
+  }
+  const results = STATE.menu.filter(m => m.actif && m.nom.toLowerCase().includes(q)).slice(0, 15);
+  document.querySelector('.cats-scroll').style.display = 'none';
+  document.querySelector('.articles-grid').style.display = 'none';
+  if (results.length === 0) {
+    box.style.display = 'block';
+    box.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:13px">Aucun résultat</div>';
+    return;
+  }
+  box.style.display = 'block';
+  box.innerHTML = '<div class="search-results">' + results.map(m =>
+    `<div class="search-result-item" onclick="addArticle('${m.id}')">
+      <div class="search-result-info">
+        <div class="search-result-nom">${m.nom}</div>
+        <div class="search-result-cat">${m.categorie}</div>
+      </div>
+      <div class="search-result-prix">${formatPrice(m.prix)}</div>
+    </div>`
+  ).join('') + '</div>';
 }
 
 function addArticle(menuId) {
@@ -1519,6 +1881,12 @@ async function envoyerEnCuisine() {
   cmd.lockedBy = '';
   saveLignes(cmd, lignes);
 
+  // Vérification burger
+  const hasBurger = lignes.some(l => l.categorie && l.categorie.toLowerCase().includes('burger'));
+  if (hasBurger) {
+    STATE.burgerWarnings.add(cmd.id);
+  }
+
   try {
     const res = await enqueueWrite('saveCommande', cmd);
     if (res && res.success) {
@@ -1530,6 +1898,12 @@ async function envoyerEnCuisine() {
       showToast('Erreur: ' + (res?.error || 'inconnue'), 'error');
     }
   } catch(e) { showToast('Connexion perdue', 'error'); }
+}
+
+function closeBurgerWarning(cmdId) {
+  STATE.burgerWarnings.delete(cmdId);
+  const el = document.getElementById('burger-warning-' + cmdId);
+  if (el) el.remove();
 }
 
 async function encaisser() {
@@ -1658,31 +2032,35 @@ function renderStation(station) {
     const lignes = getLignes(c).filter(l => l.station === station && l.statut !== 'servi');
     const ref = c.sentAt ? parseInt(c.sentAt) : parseInt(c.createdAt);
     const elapsed = ref ? now - ref : 0;
-    const tClass = timerClass(elapsed, false);
+    const headerCls = stationHeaderClass(elapsed);
+    const timerCls = stationTimerClass(elapsed);
 
     const label = c.type === 'emporter'
       ? 'Emporté #' + String(c.table).padStart(4,'0')
       : 'Table ' + c.table;
 
+    const allergie = c.allergie || '';
+
     html += `<div class="station-card">
-      <div class="station-card-header">
+      ${allergie ? `<div class="allergie-bandeau">⚠ Allergie : ${allergie}</div>` : ''}
+      <div class="station-card-header ${headerCls}" data-station-header="${c.id}">
         <strong style="font-size:14px">${label}</strong>
-        ${c.vip ? '<span class="badge badge-vip" style="font-size:10px">VIP</span>' : ''}
-        <span class="station-card-timer ${tClass}" data-station-timer="${c.id}">${formatTimer(elapsed)}</span>
+        ${c.couverts ? `<span style="font-size:11px;opacity:.7;margin-left:4px">${c.couverts} cvt</span>` : ''}
+        ${c.vip ? '<span class="badge badge-vip" style="font-size:10px;margin-left:4px">VIP</span>' : ''}
+        <span class="${timerCls} station-card-timer" data-station-timer="${c.id}">${formatTimer(elapsed)}</span>
       </div>
       <div>
         ${lignes.map(l => buildStationLigne(c, l, station)).join('')}
       </div>
       <div style="padding:8px 12px">
-        <button class="btn btn-success" style="padding:8px;font-size:13px;width:100%"
-          onclick="marquerToutPret('${c.id}','${station}')">✓ Tout prêt</button>
+        <button class="btn btn-success" style="padding:8px;font-size:13px;width:100%;background:#5C6B3A"
+          onclick="showConfirmToutPret('${c.id}','${station}')">✓ Tout terminer</button>
       </div>
     </div>`;
   });
 
   el.innerHTML = html;
   startStationTimers(station);
-  attachSwipeListeners();
 }
 
 function buildStationLigne(cmd, l, station) {
@@ -1691,12 +2069,13 @@ function buildStationLigne(cmd, l, station) {
   const tClass = timerClass(elapsed, true);
   const isPret = l.statut === 'prêt';
   const isRed = tClass === 'red' && !isPret;
+  const nomEsc = l.nom.replace(/'/g, "\\'");
+  const commentEsc = (l.commentaire || '').replace(/'/g, "\\'");
 
   return `<div class="station-ligne ${isPret ? 'pret' : ''} ${isRed ? 'blink-red' : ''}"
     data-cmdid="${cmd.id}" data-ligneid="${l.id}"
-    ontouchstart="swipeStart(event)" ontouchmove="swipeMove(event)" ontouchend="swipeEnd(event,'${cmd.id}','${l.id}')">
-    <div class="swipe-indicator" id="swipe-${l.id}"></div>
-    <div>
+    onclick="${isPret ? '' : `showConfirmPretLigne('${cmd.id}','${l.id}','${nomEsc}','${commentEsc}')`}">
+    <div style="flex:1">
       <div style="display:flex;align-items:center;gap:6px">
         <span class="ligne-qte">${l.qte||1}×</span>
         <span class="ligne-nom">${l.nom}</span>
@@ -1704,7 +2083,7 @@ function buildStationLigne(cmd, l, station) {
       ${l.commentaire ? `<div class="ligne-comment">💬 ${l.commentaire}</div>` : ''}
     </div>
     <span class="ligne-timer ${tClass}">${formatTimer(elapsed)}</span>
-    ${isPret ? '<span style="color:var(--green);font-size:16px">✓</span>' : ''}
+    ${isPret ? '<span style="color:var(--green);font-size:20px;margin-left:8px">✓</span>' : ''}
   </div>`;
 }
 
@@ -1721,7 +2100,12 @@ function startStationTimers(station) {
       if (!ref) return;
       const elapsed = now - ref;
       el.textContent = formatTimer(elapsed);
-      el.className = 'station-card-timer ' + timerClass(elapsed, false);
+      el.className = stationTimerClass(elapsed);
+      // Update header background class
+      const header = document.querySelector(`[data-station-header="${cmdId}"]`);
+      if (header) {
+        header.className = 'station-card-header ' + stationHeaderClass(elapsed);
+      }
     });
     document.querySelectorAll('.ligne-timer').forEach(el => {
       const ligne = el.closest('.station-ligne');
@@ -1740,40 +2124,68 @@ function startStationTimers(station) {
 }
 
 // ============================================================
-// SWIPE POUR MARQUER PRÊT
+// CUISINE — 4 NIVEAUX DE COULEUR HEADER
 // ============================================================
-let swipeState = { startX: 0, startY: 0, target: null };
-
-function swipeStart(e) {
-  swipeState.startX = e.touches[0].clientX;
-  swipeState.startY = e.touches[0].clientY;
-  swipeState.target = e.currentTarget;
+function stationHeaderClass(ms) {
+  const min = ms / 60000;
+  if (min >= 20) return 'sh-critique';
+  if (min >= 15) return 'sh-urgent';
+  if (min >= 8)  return 'sh-attention';
+  return '';
 }
 
-function swipeMove(e) {
-  const dx = e.touches[0].clientX - swipeState.startX;
-  const dy = Math.abs(e.touches[0].clientY - swipeState.startY);
-  if (dy > 30) return; // mouvement vertical → scroll
-  if (dx > 0) {
-    const ligneEl = e.currentTarget;
-    const ligneId = ligneEl.getAttribute('data-ligneid');
-    const indicator = document.getElementById('swipe-' + ligneId);
-    if (indicator) indicator.style.width = Math.min(dx, 120) + 'px';
-    e.preventDefault();
-  }
+function stationTimerClass(ms) {
+  const min = ms / 60000;
+  if (min >= 20) return 'sct-critique station-card-timer';
+  if (min >= 15) return 'sct-urgent station-card-timer';
+  if (min >= 8)  return 'sct-attention station-card-timer';
+  return 'sct-normal station-card-timer';
 }
 
-function swipeEnd(e, cmdId, ligneId) {
-  const dx = e.changedTouches[0].clientX - swipeState.startX;
-  const indicator = document.getElementById('swipe-' + ligneId);
-  if (indicator) indicator.style.width = '0';
-  if (dx > 80) {
-    marquerPretLigne(cmdId, ligneId);
-  }
+// ============================================================
+// CUISINE — POPUP CONFIRMATION TAP
+// ============================================================
+function closeConfirmPopup(e) {
+  const overlay = document.getElementById('confirm-popup-overlay');
+  if (!e || e.target === overlay) overlay.classList.remove('active');
 }
 
-function attachSwipeListeners() {
-  // Listeners are attached inline via ontouchstart/move/end attributes
+function showConfirmPretLigne(cmdId, ligneId, nom, comment) {
+  const box = document.getElementById('confirm-popup-box');
+  box.innerHTML = `
+    <div class="confirm-popup-title">✓ Plat terminé ?</div>
+    <div class="confirm-popup-detail">
+      <strong>${nom}</strong><br>
+      ${comment ? `<em style="color:#7A6E5F">${comment}</em>` : ''}
+    </div>
+    <div class="confirm-popup-btns">
+      <button class="confirm-popup-cancel" onclick="closeConfirmPopup()">Annuler</button>
+      <button class="confirm-popup-ok" onclick="marquerPretLigne('${cmdId}','${ligneId}');closeConfirmPopup()">✓ Confirmer</button>
+    </div>`;
+  document.getElementById('confirm-popup-overlay').classList.add('active');
+}
+
+function showConfirmToutPret(cmdId, station) {
+  const cmd = STATE.commandes.find(c => c.id === cmdId);
+  if (!cmd) return;
+  const lignes = getLignes(cmd).filter(l => l.station === station && l.statut === 'en_attente');
+  if (lignes.length === 0) { showToast('Tout est déjà prêt', 'success'); return; }
+  const label = cmd.type === 'emporter'
+    ? 'Emporté #' + String(cmd.table).padStart(4,'0')
+    : 'Table ' + cmd.table;
+  const listHtml = lignes.map(l =>
+    `<li>${l.qte||1}× ${l.nom}</li>`
+  ).join('');
+  const box = document.getElementById('confirm-popup-box');
+  box.innerHTML = `
+    <div class="confirm-popup-title">✓ Terminer toute la table ?</div>
+    <div class="confirm-popup-detail">${label}${cmd.couverts ? ' · ' + cmd.couverts + ' couverts' : ''}</div>
+    <ul class="confirm-popup-list">${listHtml}</ul>
+    <div class="confirm-popup-btns">
+      <button class="confirm-popup-cancel" onclick="closeConfirmPopup()">Annuler</button>
+      <button class="confirm-popup-ok" onclick="marquerToutPret('${cmdId}','${station}');closeConfirmPopup()">✓ Tout confirmer</button>
+    </div>`;
+  document.getElementById('confirm-popup-overlay').classList.add('active');
 }
 
 async function marquerPretLigne(cmdId, ligneId) {
