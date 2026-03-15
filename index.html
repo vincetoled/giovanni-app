@@ -306,6 +306,37 @@ h1,h2,h3{font-family:'Cormorant Garamond',serif;font-weight:600}
   text-align:right;padding:10px 0 4px;
 }
 
+/* Ligne panier collapsible */
+.panier-ligne-header{
+  display:flex;align-items:center;gap:8px;cursor:pointer;
+  padding:2px 0;
+}
+.panier-ligne-toggle{
+  font-size:11px;color:var(--text-muted);margin-left:auto;flex-shrink:0;
+  transition:transform .2s;
+}
+.panier-ligne.expanded .panier-ligne-toggle{transform:rotate(90deg)}
+.panier-ligne-detail{
+  display:none;margin-top:6px;
+  border-top:1px solid rgba(255,255,255,.05);padding-top:6px;
+}
+.panier-ligne.expanded .panier-ligne-detail{display:block}
+.has-comment-dot{
+  display:inline-block;width:6px;height:6px;border-radius:50%;
+  background:var(--or);margin-left:4px;vertical-align:middle;flex-shrink:0;
+}
+
+/* Badge prêt partiel */
+.pret-partial-badge{
+  display:inline-flex;align-items:center;gap:4px;
+  background:rgba(212,131,26,.2);color:#D4831A;
+  border:1px solid rgba(212,131,26,.4);
+  padding:3px 8px;border-radius:20px;
+  font-size:11px;font-weight:700;cursor:pointer;
+}
+.pret-all-badge-clickable{cursor:pointer}
+.table-card.pret-partial{border-color:rgba(212,131,26,.5)}
+
 /* ============================================================
    BOUTONS
    ============================================================ */
@@ -707,6 +738,23 @@ h1,h2,h3{font-family:'Cormorant Garamond',serif;font-weight:600}
   background:rgba(192,82,42,.2);color:var(--terre);border-color:var(--terre);
 }
 
+/* Phase 4a — sélection catégorie */
+.cat-picker-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:10px;
+  padding:10px 0;
+}
+.cat-picker-tile{
+  border-radius:12px;padding:16px 12px;
+  display:flex;align-items:center;gap:12px;
+  background:rgba(255,255,255,.05);border:1px solid var(--border);
+  cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif;
+}
+.cat-picker-tile:active{background:rgba(201,168,76,.15);border-color:var(--border-active)}
+.cat-picker-tile.highlight{background:rgba(201,168,76,.1);border-color:rgba(201,168,76,.3)}
+.cat-picker-icon{font-size:26px;line-height:1;flex-shrink:0}
+.cat-picker-label{font-size:14px;font-weight:500;color:var(--text);line-height:1.2}
+.cat-picker-sub{font-size:11px;color:var(--text-muted);margin-top:2px}
+
 /* Search bar — articles */
 .article-search{position:relative;margin-bottom:8px;flex-shrink:0}
 .article-search input{
@@ -913,6 +961,7 @@ let STATE = {
   audioCtx: null,
   wakeLock: null,
   burgerWarnings: new Set(),
+  pendingClientAlert: false,
   // Edit modal state
   editCommande: null,
   editCatFilter: null,
@@ -1190,8 +1239,12 @@ async function pollCommandes() {
       } else {
         dbg('Pas de commandes ouvertes dans le poll. Total=' + res.commandes.length);
       }
-      if (hasNew) playNewOrder();
-      if (hasNewClient) playNewOrder();
+      const modalOpen = isModalOpen();
+      if (hasNew && !modalOpen) playNewOrder();
+      if (hasNewClient) {
+        if (!modalOpen) playNewOrder();
+        else STATE.pendingClientAlert = true;
+      }
       renderCurrentView();
       updateNavBadges();
     }
@@ -1337,18 +1390,20 @@ function renderTableCard(c) {
   const tStr = c.statut === 'ouverte' && ref ? formatTimer(elapsed) : '';
 
   const pretAll = isPretAll(c);
+  const pretPartial = !pretAll && isPretPartial(c);
   const isLocked = isLockedByOther(c);
-  const isClient = c.statut === 'en_attente_validation';
   const isBrouillon = c.statut === 'brouillon';
 
   let badges = '';
   if (c.vip) badges += '<span class="badge badge-vip">⭐ VIP</span>';
   if (isBrouillon) badges += '<span class="badge badge-brouillon">Brouillon</span>';
-  if (pretAll) badges += '<span class="pret-all-badge">✓ Prêt</span>';
+  if (pretAll) badges += `<span class="pret-all-badge pret-all-badge-clickable" onclick="event.stopPropagation();showPretDetail('${c.id}',event)">✓ Tout prêt</span>`;
+  if (pretPartial) badges += `<span class="pret-partial-badge" onclick="event.stopPropagation();showPretDetail('${c.id}',event)">◑ En partie prêt</span>`;
 
   let cardClass = 'table-card';
   if (c.statut !== 'brouillon') cardClass += ' has-order';
   if (pretAll) cardClass += ' pret-all';
+  if (pretPartial) cardClass += ' pret-partial';
   if (isLocked) cardClass += ' locked';
 
   const totalItems = lignes.reduce((s,l) => s + (l.qte||1), 0);
@@ -1398,6 +1453,51 @@ function isPretAll(cmd) {
   return lignes.every(l => l.statut === 'prêt' || l.statut === 'servi');
 }
 
+function isPretPartial(cmd) {
+  const lignes = getLignes(cmd);
+  if (lignes.length === 0) return false;
+  const hasPret = lignes.some(l => l.statut === 'prêt' || l.statut === 'servi');
+  const hasPending = lignes.some(l => l.statut === 'en_attente' || l.statut === 'en préparation');
+  return hasPret && hasPending;
+}
+
+function showPretDetail(cmdId, e) {
+  if (e) e.stopPropagation();
+  const cmd = STATE.commandes.find(c => c.id === cmdId);
+  if (!cmd) return;
+  const lignes = getLignes(cmd);
+  const label = cmd.type === 'emporter'
+    ? 'Emporté #' + String(cmd.table).padStart(4,'0')
+    : 'Table ' + cmd.table;
+
+  const prets = lignes.filter(l => l.statut === 'prêt');
+  const enCours = lignes.filter(l => l.statut !== 'prêt' && l.statut !== 'servi');
+  const servis = lignes.filter(l => l.statut === 'servi');
+
+  const listHtml = (arr, icon, color) => arr.length === 0 ? '' :
+    `<div style="margin-bottom:12px">
+      <div style="font-size:11px;font-weight:700;color:${color};text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">${icon} ${arr.length} article${arr.length>1?'s':''}</div>
+      ${arr.map(l => `<div style="padding:4px 0;font-size:13px;border-bottom:1px solid rgba(0,0,0,.06)">${l.qte||1}× ${l.nom}${l.commentaire ? `<span style="font-size:11px;color:#7A6E5F;margin-left:6px">— ${l.commentaire}</span>` : ''}</div>`).join('')}
+    </div>`;
+
+  const box = document.getElementById('confirm-popup-box');
+  box.innerHTML = `
+    <div class="confirm-popup-title">${label}</div>
+    ${listHtml(prets, '✅ Prêt à emporter', '#6B8C3A')}
+    ${listHtml(enCours, '⏳ En préparation', '#D4831A')}
+    ${listHtml(servis, '✓ Déjà servi', '#7A6E5F')}
+    <div class="confirm-popup-btns" style="margin-top:16px">
+      <button class="confirm-popup-ok" onclick="closeConfirmPopup()">Fermer</button>
+    </div>`;
+  document.getElementById('confirm-popup-overlay').classList.add('active');
+}
+
+function _upsertCommande(cmd) {
+  const idx = STATE.commandes.findIndex(c => c.id === cmd.id);
+  if (idx >= 0) STATE.commandes[idx] = cmd;
+  else STATE.commandes.push(cmd);
+}
+
 function isLockedByOther(cmd) {
   if (!cmd.lockedBy) return false;
   try {
@@ -1440,7 +1540,7 @@ function openModalNewCommandeEmporter() {
 }
 
 function _phaseStepperHtml(active) {
-  const steps = ['Type','Table','Couverts','Articles'];
+  const steps = ['Type','Table','Couverts','Catégorie','Articles'];
   return '<div class="phase-stepper">' + steps.map((s,i) => {
     const cls = i < active ? 'done' : (i === active ? 'active' : '');
     return `<div class="phase-step ${cls}">${s}</div>`;
@@ -1600,12 +1700,52 @@ function finaliserPhase35() {
   STATE.editCommande.updatedAt = Date.now();
   STATE.editCommande.source = 'service';
 
-  // Catégorie par défaut : Apéritifs si aperitif=true, sinon première catégorie
-  if (_phase35State.aperitif) {
-    STATE.editCatFilter = STATE.categories.find(c => c.toLowerCase().includes('apéritif')) || STATE.categories[0] || null;
-  } else {
-    STATE.editCatFilter = STATE.categories[0] || null;
-  }
+  STATE.editCatFilter = STATE.categories[0] || null;
+  showModalCatPicker(_phase35State.aperitif);
+}
+
+// Phase 4a — sélection de catégorie (tuiles)
+const CAT_GROUPS = [
+  { icon: '🥗', label: 'Entrées & Salades',     sub: 'Entrées, Salades',           cats: ['Entrées','Salades'] },
+  { icon: '🍕', label: 'Pizzas',                 sub: 'Classiques & Gourmandes',    cats: ['Pizzas Classiques','Pizzas Gourmandes'] },
+  { icon: '🍝', label: 'Pâtes & Escalopes',      sub: 'Pâtes, Escalopes Italiennes',cats: ['Pâtes','Escalopes Italiennes'] },
+  { icon: '🥩', label: 'Viandes & Poissons',     sub: 'Viandes, Poissons',          cats: ['Viandes Rouges','Poissons & Fruits de Mer'] },
+  { icon: '🍔', label: 'Burgers',                sub: '',                           cats: ['Burgers'] },
+  { icon: '🍨', label: 'Desserts & Glaces',      sub: 'Desserts, Glaces',           cats: ['Desserts','Glaces'] },
+  { icon: '🧒', label: 'Menu Bambino',           sub: '',                           cats: ['Menu Bambino'] },
+  { icon: '🍹', label: 'Boissons',               sub: 'Apéritifs, Cocktails, Bières…',cats: ['Apéritifs','Cocktails Classiques','Cocktails Signature','Mocktails','Bières Pressions','Bières Bouteilles','Vins','Boissons Fraîches','Eaux Minérales','Boissons Chaudes'] },
+  { icon: '➕', label: 'Suppléments',            sub: '',                           cats: ['Suppléments'] },
+];
+
+function showModalCatPicker(aperitifSelected) {
+  const tilesHtml = CAT_GROUPS.map((g, i) => {
+    const hl = aperitifSelected && g.label === 'Boissons' ? ' highlight' : '';
+    return `<div class="cat-picker-tile${hl}" onclick="pickCatGroup(${i})">
+      <div class="cat-picker-icon">${g.icon}</div>
+      <div>
+        <div class="cat-picker-label">${g.label}</div>
+        ${g.sub ? `<div class="cat-picker-sub">${g.sub}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  const label = STATE.editCommande.type === 'emporter'
+    ? 'Emporté #' + String(STATE.editCommande.table || '').padStart(4,'0')
+    : 'Table ' + (STATE.editCommande.table || '');
+  document.getElementById('modal-title').textContent = label;
+  document.getElementById('modal-body').innerHTML =
+    _phaseStepperHtml(3) +
+    `<div class="cat-picker-grid">${tilesHtml}</div>`;
+  document.getElementById('modal-footer').innerHTML =
+    `<button class="btn btn-secondary" onclick="showModalPhase35()">← Retour</button>
+     <button class="btn btn-outline" onclick="showModalArticles()">Voir tout →</button>`;
+}
+
+function pickCatGroup(groupIdx) {
+  const group = CAT_GROUPS[groupIdx];
+  // Trouver la première catégorie du groupe présente dans le menu
+  const found = group.cats.find(c => STATE.categories.includes(c));
+  STATE.editCatFilter = found || STATE.categories[0] || null;
   showModalArticles();
 }
 
@@ -1710,29 +1850,52 @@ function showModalArticles() {
   openModal();
 }
 
+const BOISSON_CATS = new Set(['Apéritifs','Cocktails Classiques','Cocktails Signature','Mocktails','Bières Pressions','Bières Bouteilles','Vins','Boissons Fraîches','Eaux Minérales','Boissons Chaudes']);
+const CHIPS_ACCOM  = ['Pâtes','Frites','Salade','Légumes'];
+const CHIPS_CUISSON = ['Bien cuit','Saignant'];
+
+function getChipsForLigne(l) {
+  const all = STATE.config.chips || [];
+  const cat = l.categorie || '';
+  if (BOISSON_CATS.has(cat)) return all.filter(c => !CHIPS_ACCOM.includes(c) && !CHIPS_CUISSON.includes(c));
+  if (cat === 'Viandes Rouges') return all; // cuisson + accompagnement
+  return all.filter(c => !CHIPS_CUISSON.includes(c)); // plats standards : accompagnement, pas cuisson
+}
+
 function buildLigneHtml(l) {
-  const chips = STATE.config.chips || [];
-  const activeChips = l.commentaire ? l.commentaire.split(' · ') : [];
+  const chips = getChipsForLigne(l);
+  const activeChips = l.commentaire ? l.commentaire.split(' · ').filter(Boolean) : [];
+  const hasDetail = activeChips.length > 0;
   const chipsHtml = chips.map(c => {
     const isActive = activeChips.includes(c);
     return `<span class="chip ${isActive ? 'active' : ''}" onclick="toggleChip('${l.id}','${c}')">${c}</span>`;
   }).join('');
 
+  const commentIndicator = hasDetail ? '<span class="has-comment-dot" title="' + (l.commentaire||'') + '"></span>' : '';
+
   return `<div class="panier-ligne" id="ligne-${l.id}">
-    <div class="panier-ligne-top">
-      <span class="panier-nom">${(l.qte||1) > 1 ? (l.qte||1)+'× ' : ''}${l.nom}</span>
+    <div class="panier-ligne-header" onclick="toggleLigneDetail('${l.id}')">
+      <span class="panier-nom">${(l.qte||1) > 1 ? (l.qte||1)+'× ' : ''}${l.nom}${commentIndicator}</span>
       <span class="panier-prix">${formatPrice((l.prix||0) * (l.qte||1))}</span>
-      <div class="qte-ctrl">
+      <div class="qte-ctrl" onclick="event.stopPropagation()">
         <button class="qte-btn" onclick="updateQte('${l.id}',-1)">−</button>
         <span class="qte-val">${l.qte||1}</span>
         <button class="qte-btn" onclick="updateQte('${l.id}',1)">+</button>
       </div>
-      <button class="chip-del" onclick="removeLigne('${l.id}')">✕</button>
+      <button class="chip-del" onclick="event.stopPropagation();removeLigne('${l.id}')">✕</button>
+      <span class="panier-ligne-toggle">›</span>
     </div>
-    <div class="chips-row">${chipsHtml}</div>
-    <textarea class="comment-input" placeholder="Commentaire libre…"
-      onchange="setCommentaire('${l.id}', this.value)">${l.commentaire || ''}</textarea>
+    <div class="panier-ligne-detail">
+      <div class="chips-row">${chipsHtml}</div>
+      <textarea class="comment-input" placeholder="Commentaire libre…"
+        onchange="setCommentaire('${l.id}', this.value)">${l.commentaire || ''}</textarea>
+    </div>
   </div>`;
+}
+
+function toggleLigneDetail(ligneId) {
+  const el = document.getElementById('ligne-' + ligneId);
+  if (el) el.classList.toggle('expanded');
 }
 
 function filterCat(cat) {
@@ -1875,29 +2038,24 @@ async function envoyerEnCuisine() {
   const cmd = STATE.editCommande;
   const lignes = getLignes(cmd);
   if (lignes.length === 0) { showToast('Panier vide', 'error'); return; }
+
+  const hasBurger = lignes.some(l => l.categorie && l.categorie.toLowerCase().includes('burger'));
+  if (hasBurger) STATE.burgerWarnings.add(cmd.id);
+
+  // Optimistic — mise à jour immédiate
   cmd.statut = 'ouverte';
   cmd.sentAt = Date.now();
   cmd.updatedAt = Date.now();
   cmd.lockedBy = '';
   saveLignes(cmd, lignes);
+  _upsertCommande(JSON.parse(JSON.stringify(cmd)));
+  showToast('Commande envoyée en cuisine ✓', 'success');
+  closeModal();
+  renderCurrentView();
+  updateNavBadges();
 
-  // Vérification burger
-  const hasBurger = lignes.some(l => l.categorie && l.categorie.toLowerCase().includes('burger'));
-  if (hasBurger) {
-    STATE.burgerWarnings.add(cmd.id);
-  }
-
-  try {
-    const res = await enqueueWrite('saveCommande', cmd);
-    if (res && res.success) {
-      cmd.updatedAt = res.updatedAt;
-      showToast('Commande envoyée en cuisine', 'success');
-      closeModal();
-      await pollCommandes();
-    } else {
-      showToast('Erreur: ' + (res?.error || 'inconnue'), 'error');
-    }
-  } catch(e) { showToast('Connexion perdue', 'error'); }
+  // Sync arrière-plan
+  enqueueWrite('saveCommande', cmd).catch(() => showToast('⚠ Erreur sync — vérifiez la connexion', 'warning'));
 }
 
 function closeBurgerWarning(cmdId) {
@@ -1910,40 +2068,38 @@ async function encaisser() {
   const cmd = STATE.editCommande;
   const lignes = getLignes(cmd);
   const total = lignes.reduce((s,l) => s + (parseFloat(l.prix)||0) * (l.qte||1), 0);
+  const label = cmd.type === 'emporter' ? 'Emporté #' + String(cmd.table).padStart(4,'0') : 'Table ' + cmd.table;
+
+  // Optimistic — retrait immédiat de la grille
   cmd.statut = 'payée';
   cmd.total = total.toFixed(2);
   cmd.updatedAt = Date.now();
   cmd.lockedBy = '';
   saveLignes(cmd, lignes);
+  STATE.commandes = STATE.commandes.filter(c => c.id !== cmd.id);
+  STATE.burgerWarnings.delete(cmd.id);
+  showToast(label + ' · encaissée · ' + formatPrice(total), 'success');
+  closeModal();
+  renderCurrentView();
+  updateNavBadges();
 
-  try {
-    const res = await enqueueWrite('saveCommande', cmd);
-    if (res && res.success) {
-      showToast('Commande encaissée — ' + formatPrice(total), 'success');
-      closeModal();
-      await pollCommandes();
-    } else {
-      showToast('Erreur: ' + (res?.error || 'inconnue'), 'error');
-    }
-  } catch(e) { showToast('Connexion perdue', 'error'); }
+  enqueueWrite('saveCommande', cmd).catch(() => showToast('⚠ Erreur sync encaissement', 'warning'));
 }
 
 async function ajouterLignesCommande() {
   const cmd = STATE.editCommande;
   const lignes = getLignes(cmd);
-  const nouvelles = lignes.filter(l => !l.addedAtSent);
-  if (nouvelles.length === 0) { showToast('Aucune nouvelle ligne', 'warning'); return; }
   cmd.updatedAt = Date.now();
   cmd.lockedBy = '';
-  try {
-    const res = await enqueueWrite('saveCommande', cmd);
-    if (res && res.success) {
-      cmd.updatedAt = res.updatedAt;
-      showToast('Lignes ajoutées', 'success');
-    } else {
-      showToast('Erreur', 'error');
-    }
-  } catch(e) { showToast('Connexion perdue', 'error'); }
+  saveLignes(cmd, lignes);
+
+  _upsertCommande(JSON.parse(JSON.stringify(cmd)));
+  showToast('Articles ajoutés ✓', 'success');
+  closeModal();
+  renderCurrentView();
+  updateNavBadges();
+
+  enqueueWrite('saveCommande', cmd).catch(() => showToast('⚠ Erreur sync', 'warning'));
 }
 
 // ============================================================
@@ -1952,23 +2108,21 @@ async function ajouterLignesCommande() {
 async function validerDemandeClient(cmdId) {
   const cmd = STATE.commandes.find(c => c.id === cmdId);
   if (!cmd) return;
-  try {
-    const res = await enqueueWrite('validerCommandeClient', { id: cmdId });
-    if (res && res.success) {
-      showToast('Demande validée', 'success');
-      await pollCommandes();
-    }
-  } catch(e) { showToast('Erreur', 'error'); }
+  cmd.statut = 'brouillon';
+  cmd.updatedAt = Date.now();
+  _upsertCommande(JSON.parse(JSON.stringify(cmd)));
+  showToast('Demande validée ✓', 'success');
+  renderCurrentView();
+  updateNavBadges();
+  enqueueWrite('validerCommandeClient', { id: cmdId }).catch(() => showToast('⚠ Erreur sync', 'warning'));
 }
 
 async function refuserDemandeClient(cmdId) {
-  try {
-    const res = await enqueueWrite('refuserCommandeClient', { id: cmdId });
-    if (res && res.success) {
-      showToast('Demande refusée', 'warning');
-      await pollCommandes();
-    }
-  } catch(e) { showToast('Erreur', 'error'); }
+  STATE.commandes = STATE.commandes.filter(c => c.id !== cmdId);
+  showToast('Demande refusée', 'warning');
+  renderCurrentView();
+  updateNavBadges();
+  enqueueWrite('refuserCommandeClient', { id: cmdId }).catch(() => showToast('⚠ Erreur sync', 'warning'));
 }
 
 // ============================================================
@@ -1978,10 +2132,21 @@ function openModal() {
   document.getElementById('modal-overlay').classList.add('active');
 }
 
+function isModalOpen() {
+  return document.getElementById('modal-overlay')?.classList.contains('active');
+}
+
 function closeModal() {
   releaseModalLock();
   document.getElementById('modal-overlay').classList.remove('active');
   STATE.editCommande = null;
+  if (STATE.pendingClientAlert) {
+    STATE.pendingClientAlert = false;
+    setTimeout(() => {
+      playNewOrder();
+      showToast('📱 Nouvelle demande client en attente', 'warning');
+    }, 300);
+  }
 }
 
 function closeModalOnBackdrop(e) {
@@ -2197,10 +2362,8 @@ async function marquerPretLigne(cmdId, ligneId) {
   l.statut = 'prêt';
   saveLignes(cmd, lignes);
   cmd.updatedAt = Date.now();
-  try {
-    await enqueueWrite('saveCommande', cmd);
-    await pollCommandes();
-  } catch(e) { showToast('Erreur réseau', 'error'); }
+  renderCurrentView();
+  enqueueWrite('saveCommande', cmd).catch(() => showToast('Erreur réseau', 'error'));
 }
 
 async function marquerToutPret(cmdId, station) {
@@ -2210,11 +2373,9 @@ async function marquerToutPret(cmdId, station) {
   lignes.filter(l => l.station === station && l.statut === 'en_attente').forEach(l => l.statut = 'prêt');
   saveLignes(cmd, lignes);
   cmd.updatedAt = Date.now();
-  try {
-    await enqueueWrite('saveCommande', cmd);
-    showToast('Commande prête', 'success');
-    await pollCommandes();
-  } catch(e) { showToast('Erreur réseau', 'error'); }
+  showToast('Table prête ✓', 'success');
+  renderCurrentView();
+  enqueueWrite('saveCommande', cmd).catch(() => showToast('Erreur réseau', 'error'));
 }
 
 async function marquerToutPretStation(station) {
@@ -2226,11 +2387,11 @@ async function marquerToutPretStation(station) {
       pending.forEach(l => l.statut = 'prêt');
       saveLignes(cmd, lignes);
       cmd.updatedAt = Date.now();
-      await enqueueWrite('saveCommande', cmd);
+      enqueueWrite('saveCommande', cmd).catch(() => {});
     }
   }
-  showToast('Tout marqué prêt', 'success');
-  await pollCommandes();
+  showToast('Tout marqué prêt ✓', 'success');
+  renderCurrentView();
 }
 
 // ============================================================
