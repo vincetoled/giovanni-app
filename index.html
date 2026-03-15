@@ -1318,12 +1318,17 @@ function showView(name) {
   renderCurrentView();
 }
 
-function renderCurrentView() {
+function renderCurrentView(force) {
   switch(STATE.currentView) {
     case 'service': renderService(); break;
     case 'cuisine': renderStation('cuisine'); break;
     case 'bar': renderStation('bar'); break;
-    case 'admin': renderAdmin(); break;
+    case 'admin':
+      // Ne pas re-rendre l'Admin pendant le polling si un champ est en cours de saisie
+      if (force || !document.getElementById('admin-content')?.contains(document.activeElement)) {
+        renderAdmin();
+      }
+      break;
   }
 }
 
