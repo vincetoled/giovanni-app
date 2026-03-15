@@ -182,10 +182,10 @@ h1,h2,h3{font-family:'Cormorant Garamond',serif;font-weight:600}
 .table-card.locked::after{
   content:'✏️';position:absolute;top:6px;right:8px;font-size:12px;
 }
-.table-num{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:600;color:var(--or);line-height:1}
-.table-info{font-size:11px;color:var(--text-muted)}
+.table-num{font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:600;color:var(--or);line-height:1}
+.table-info{font-size:12px;color:var(--text-muted)}
 .table-badges{display:flex;flex-wrap:wrap;gap:4px;margin-top:auto}
-.table-timer{font-size:11px;font-weight:600}
+.table-timer{font-size:13px;font-weight:700}
 .table-timer.green{color:var(--green)}
 .table-timer.orange{color:var(--orange)}
 .table-timer.red{color:var(--red)}
@@ -254,20 +254,20 @@ h1,h2,h3{font-family:'Cormorant Garamond',serif;font-weight:600}
 }
 .cat-btn.active{background:rgba(201,168,76,.15);color:var(--or);border-color:var(--border-active)}
 .articles-grid{
-  display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));
-  gap:8px;margin-top:8px;
+  display:grid;grid-template-columns:repeat(2,1fr);
+  gap:10px;margin-top:8px;
 }
 .article-btn{
   background:rgba(255,255,255,.05);border:1px solid var(--border);
-  border-radius:var(--radius-sm);padding:10px 8px;
-  text-align:center;display:flex;flex-direction:column;align-items:center;gap:4px;
+  border-radius:var(--radius-sm);padding:14px 10px;
+  text-align:center;display:flex;flex-direction:column;align-items:center;gap:5px;
   transition:all .15s;
 }
 .article-btn:active{background:rgba(201,168,76,.15);border-color:var(--border-active)}
 .article-btn.inactive{opacity:.4}
 .article-btn.in-cart{background:rgba(201,168,76,.12);border-color:rgba(201,168,76,.35)}
-.article-btn .art-nom{font-size:12px;font-weight:500;line-height:1.3}
-.article-btn .art-prix{font-size:13px;color:var(--or);font-weight:600}
+.article-btn .art-nom{font-size:13px;font-weight:600;line-height:1.3}
+.article-btn .art-prix{font-size:14px;color:var(--or);font-weight:700}
 .art-qte-ctrl{
   display:flex;align-items:center;justify-content:center;gap:8px;
   margin-top:7px;
@@ -287,21 +287,32 @@ h1,h2,h3{font-family:'Cormorant Garamond',serif;font-weight:600}
 }
 .search-result-qte{display:flex;align-items:center;gap:5px;flex-shrink:0}
 
-.panier-section{margin-top:12px}
+.panier-section{
+  margin-top:16px;
+  padding-top:14px;
+  border-top:2px solid rgba(201,168,76,.25);
+}
 .panier-ligne{
   background:rgba(255,255,255,.04);border:1px solid var(--border);
-  border-radius:var(--radius-sm);padding:10px;margin-bottom:6px;
+  border-radius:var(--radius-sm);padding:12px;margin-bottom:8px;
 }
 .panier-ligne-top{display:flex;align-items:center;gap:8px}
-.panier-nom{flex:1;font-size:13px;font-weight:500}
-.panier-prix{font-size:13px;color:var(--or);white-space:nowrap}
-.qte-ctrl{display:flex;align-items:center;gap:8px}
+.panier-nom{flex:1;font-size:14px;font-weight:600;line-height:1.3}
+.panier-prix{font-size:14px;color:var(--or);font-weight:700;white-space:nowrap}
+.qte-ctrl{display:flex;align-items:center;gap:6px}
 .qte-btn{
-  width:28px;height:28px;border-radius:50%;
+  width:36px;height:36px;border-radius:50%;
   background:rgba(255,255,255,.08);
-  display:flex;align-items:center;justify-content:center;font-size:16px;
+  display:flex;align-items:center;justify-content:center;font-size:18px;
 }
-.qte-val{font-size:14px;font-weight:600;min-width:20px;text-align:center}
+.qte-btn:active{background:rgba(255,255,255,.18)}
+.qte-val{font-size:15px;font-weight:700;min-width:22px;text-align:center}
+.supp-link{
+  display:inline-block;font-size:11px;font-weight:500;
+  color:var(--or);background:rgba(201,168,76,.12);
+  border:1px solid rgba(201,168,76,.3);border-radius:10px;
+  padding:1px 7px;margin-left:5px;vertical-align:middle;white-space:nowrap;
+}
 .chips-row{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
 .chip{
   padding:3px 10px;border-radius:20px;font-size:11px;
@@ -415,23 +426,29 @@ h1,h2,h3{font-family:'Cormorant Garamond',serif;font-weight:600}
 
 .station-ligne{
   display:flex;align-items:center;gap:10px;
-  padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.04);
+  padding:13px 14px;border-bottom:1px solid rgba(255,255,255,.06);
   position:relative;overflow:hidden;cursor:pointer;
   user-select:none;-webkit-user-select:none;
 }
 .station-ligne:last-child{border-bottom:none}
-.station-ligne .ligne-nom{flex:1;font-size:13px;font-weight:500}
+.station-ligne .ligne-nom{flex:1;font-size:15px;font-weight:600}
 .station-ligne .ligne-qte{
-  font-size:13px;font-weight:700;color:var(--or);
-  min-width:24px;text-align:center;
+  font-size:15px;font-weight:800;color:var(--or);
+  min-width:28px;text-align:center;
 }
 .station-ligne .ligne-comment{
-  font-size:11px;color:var(--text-muted);
-  width:100%;margin-top:2px;
+  font-size:12px;color:var(--text-muted);
+  width:100%;margin-top:3px;
 }
-.station-ligne .ligne-timer{font-size:10px;font-weight:600;white-space:nowrap}
-.station-ligne.pret{opacity:.4}
+.station-ligne .ligne-timer{font-size:11px;font-weight:700;white-space:nowrap}
+.station-ligne.pret{opacity:.35;cursor:default}
 .station-ligne.pret .ligne-nom{text-decoration:line-through}
+.station-pret-sep{
+  padding:6px 14px;font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.7px;
+  color:var(--text-muted);background:rgba(255,255,255,.02);
+  border-top:1px solid rgba(255,255,255,.06);
+}
 .station-ligne.blink-red{animation:blinkRed 1s ease-in-out infinite}
 @keyframes blinkRed{0%,100%{background:transparent}50%{background:rgba(217,79,79,.15)}}
 
@@ -1831,7 +1848,8 @@ function showModalArticles() {
   const filtered = STATE.menu.filter(m => m.categorie === STATE.editCatFilter);
   filtered.forEach(m => {
     const inactive = !m.actif;
-    const qte = getQteInPanier(m.id);
+    // Suppléments : toujours via le picker, pas de contrôle quantité sur la tuile
+    const qte = m.categorie === 'Suppléments' ? 0 : getQteInPanier(m.id);
     articlesHtml += `<div class="article-btn ${inactive ? 'inactive' : ''} ${qte > 0 ? 'in-cart' : ''}"
       id="art-${m.id}"
       onclick="${inactive ? '' : `addArticle('${m.id}')`}">
@@ -1899,9 +1917,12 @@ function buildLigneHtml(l) {
 
   const commentIndicator = hasDetail ? '<span class="has-comment-dot" title="' + (l.commentaire||'') + '"></span>' : '';
 
+  const suppLink = (l.commentaire || '').startsWith('→')
+    ? `<span class="supp-link">${l.commentaire}</span>` : '';
+
   return `<div class="panier-ligne" id="ligne-${l.id}">
     <div class="panier-ligne-header" onclick="toggleLigneDetail('${l.id}')">
-      <span class="panier-nom">${(l.qte||1) > 1 ? (l.qte||1)+'× ' : ''}${l.nom}${commentIndicator}</span>
+      <span class="panier-nom">${(l.qte||1) > 1 ? (l.qte||1)+'× ' : ''}${l.nom}${suppLink}${commentIndicator}</span>
       <span class="panier-prix">${formatPrice((l.prix||0) * (l.qte||1))}</span>
       <div class="qte-ctrl" onclick="event.stopPropagation()">
         <button class="qte-btn" onclick="updateQte('${l.id}',-1)">−</button>
@@ -1991,9 +2012,44 @@ function buildArticleTileInner(m, qte) {
 function addArticle(menuId) {
   const m = STATE.menu.find(x => x.id === menuId);
   if (!m || !m.actif) return;
+
+  // Suppléments : proposer de lier à un plat du panier
+  if (m.categorie === 'Suppléments') {
+    const platsInPanier = getLignes(STATE.editCommande)
+      .filter(l => !BOISSON_CATS.has(l.categorie) && l.categorie !== 'Suppléments');
+    if (platsInPanier.length > 0) {
+      showSupplementPicker(m, platsInPanier);
+      return;
+    }
+  }
+
+  _doAddArticle(m, '');
+}
+
+function showSupplementPicker(m, plats) {
+  const box = document.getElementById('confirm-popup-box');
+  const tilesHtml = plats.map(l =>
+    `<div onclick="closeConfirmPopup();_doAddArticle(window._suppM,'→ ${l.nom.replace(/'/g,"\\'")}');window._suppM=null"
+      style="padding:10px 14px;margin-bottom:6px;background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.25);border-radius:8px;cursor:pointer;font-size:13px;font-family:'DM Sans',sans-serif">
+      ${l.qte > 1 ? l.qte+'× ' : ''}${l.nom}
+    </div>`
+  ).join('');
+  window._suppM = m;
+  box.innerHTML = `
+    <div class="confirm-popup-title" style="margin-bottom:12px">Sur quel plat ?<br><span style="font-size:13px;color:var(--text-muted);font-weight:400">${m.nom} — ${formatPrice(m.prix)}</span></div>
+    ${tilesHtml}
+    <div class="confirm-popup-btns" style="margin-top:8px">
+      <button class="confirm-popup-cancel" onclick="closeConfirmPopup();_doAddArticle(window._suppM,'');window._suppM=null">Sans précision</button>
+    </div>`;
+  document.getElementById('confirm-popup-overlay').classList.add('active');
+}
+
+function _doAddArticle(m, commentaire) {
   const lignes = getLignes(STATE.editCommande);
-  // Incrémenter une ligne existante sans commentaire, sinon créer
-  const existing = lignes.find(l => l.menuId === menuId && !l.commentaire);
+  // Incrémenter une ligne existante sans commentaire (sauf suppléments toujours en ligne séparée)
+  const existing = m.categorie !== 'Suppléments'
+    ? lignes.find(l => l.menuId === m.id && !l.commentaire)
+    : null;
   if (existing) {
     existing.qte = (existing.qte || 1) + 1;
   } else {
@@ -2006,7 +2062,7 @@ function addArticle(menuId) {
       prix: m.prix,
       qte: 1,
       statut: 'en_attente',
-      commentaire: '',
+      commentaire: commentaire || '',
       addedAt: Date.now(),
     });
   }
@@ -2302,16 +2358,20 @@ function renderStation(station) {
 
     const allergie = c.allergie || '';
 
+    const lignesEnAttente = lignes.filter(l => l.statut !== 'prêt');
+    const lignesPret = lignes.filter(l => l.statut === 'prêt');
+
     html += `<div class="station-card">
       ${allergie ? `<div class="allergie-bandeau">⚠ Allergie : ${allergie}</div>` : ''}
       <div class="station-card-header ${headerCls}" data-station-header="${c.id}">
-        <strong style="font-size:14px">${label}</strong>
-        ${c.couverts ? `<span style="font-size:11px;opacity:.7;margin-left:4px">${c.couverts} cvt</span>` : ''}
+        <strong style="font-size:15px">${label}</strong>
+        ${c.couverts ? `<span style="font-size:12px;opacity:.7;margin-left:4px">${c.couverts} cvt</span>` : ''}
         ${c.vip ? '<span class="badge badge-vip" style="font-size:10px;margin-left:4px">VIP</span>' : ''}
         <span class="${timerCls} station-card-timer" data-station-timer="${c.id}">${formatTimer(elapsed)}</span>
       </div>
       <div>
-        ${lignes.map(l => buildStationLigne(c, l, station)).join('')}
+        ${lignesEnAttente.map(l => buildStationLigne(c, l, station)).join('')}
+        ${lignesPret.length > 0 ? `<div class="station-pret-sep">✓ Prêt (${lignesPret.length})</div>${lignesPret.map(l => buildStationLigne(c, l, station)).join('')}` : ''}
       </div>
       <div style="padding:8px 12px">
         <button class="btn btn-success" style="padding:8px;font-size:13px;width:100%;background:#5C6B3A"
