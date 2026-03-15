@@ -265,8 +265,27 @@ h1,h2,h3{font-family:'Cormorant Garamond',serif;font-weight:600}
 }
 .article-btn:active{background:rgba(201,168,76,.15);border-color:var(--border-active)}
 .article-btn.inactive{opacity:.4}
+.article-btn.in-cart{background:rgba(201,168,76,.12);border-color:rgba(201,168,76,.35)}
 .article-btn .art-nom{font-size:12px;font-weight:500;line-height:1.3}
 .article-btn .art-prix{font-size:13px;color:var(--or);font-weight:600}
+.art-qte-ctrl{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  margin-top:7px;
+}
+.art-qte-btn{
+  width:26px;height:26px;border-radius:50%;
+  background:rgba(201,168,76,.2);border:1px solid rgba(201,168,76,.35);
+  color:var(--or);font-size:16px;font-weight:700;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'DM Sans',sans-serif;cursor:pointer;flex-shrink:0;
+}
+.art-qte-btn:active{background:rgba(201,168,76,.4)}
+.art-qte-val{
+  font-size:15px;font-weight:700;color:var(--or);
+  min-width:18px;text-align:center;
+  font-family:'DM Mono',monospace;
+}
+.search-result-qte{display:flex;align-items:center;gap:5px;flex-shrink:0}
 
 .panier-section{margin-top:12px}
 .panier-ligne{
@@ -1487,7 +1506,8 @@ function showPretDetail(cmdId, e) {
     ${listHtml(enCours, '⏳ En préparation', '#D4831A')}
     ${listHtml(servis, '✓ Déjà servi', '#7A6E5F')}
     <div class="confirm-popup-btns" style="margin-top:16px">
-      <button class="confirm-popup-ok" onclick="closeConfirmPopup()">Fermer</button>
+      <button class="confirm-popup-cancel" onclick="closeConfirmPopup()">Fermer</button>
+      <button class="confirm-popup-ok" onclick="closeConfirmPopup();openModalEditCommande('${cmdId}')">Mise à jour</button>
     </div>`;
   document.getElementById('confirm-popup-overlay').classList.add('active');
 }
@@ -1806,11 +1826,12 @@ function showModalArticles() {
   const filtered = STATE.menu.filter(m => m.categorie === STATE.editCatFilter);
   filtered.forEach(m => {
     const inactive = !m.actif;
-    articlesHtml += `<button class="article-btn ${inactive ? 'inactive' : ''}"
+    const qte = getQteInPanier(m.id);
+    articlesHtml += `<div class="article-btn ${inactive ? 'inactive' : ''} ${qte > 0 ? 'in-cart' : ''}"
+      id="art-${m.id}"
       onclick="${inactive ? '' : `addArticle('${m.id}')`}">
-      <span class="art-nom">${m.nom}</span>
-      <span class="art-prix">${formatPrice(m.prix)}</span>
-    </button>`;
+      ${buildArticleTileInner(m, qte)}
+    </div>`;
   });
 
   let panierHtml = lignes.map(l => buildLigneHtml(l)).join('');
@@ -1923,36 +1944,77 @@ function searchArticles(query) {
     return;
   }
   box.style.display = 'block';
-  box.innerHTML = '<div class="search-results">' + results.map(m =>
-    `<div class="search-result-item" onclick="addArticle('${m.id}')">
+  box.innerHTML = '<div class="search-results">' + results.map(m => {
+    const qte = getQteInPanier(m.id);
+    const qteHtml = qte > 0
+      ? `<div class="search-result-qte" onclick="event.stopPropagation()">
+          <button class="art-qte-btn" onclick="decrementArticle('${m.id}')">−</button>
+          <span class="art-qte-val">${qte}</span>
+          <button class="art-qte-btn" onclick="addArticle('${m.id}')">+</button>
+         </div>`
+      : '';
+    return `<div class="search-result-item ${qte > 0 ? 'in-cart' : ''}" id="sart-${m.id}" onclick="addArticle('${m.id}')">
       <div class="search-result-info">
         <div class="search-result-nom">${m.nom}</div>
         <div class="search-result-cat">${m.categorie}</div>
       </div>
-      <div class="search-result-prix">${formatPrice(m.prix)}</div>
-    </div>`
-  ).join('') + '</div>';
+      <div style="display:flex;align-items:center;gap:8px">
+        ${qteHtml}
+        <div class="search-result-prix">${formatPrice(m.prix)}</div>
+      </div>
+    </div>`;
+  }).join('') + '</div>';
+}
+
+function getQteInPanier(menuId) {
+  return getLignes(STATE.editCommande)
+    .filter(l => l.menuId === menuId)
+    .reduce((s, l) => s + (l.qte || 1), 0);
+}
+
+function buildArticleTileInner(m, qte) {
+  const qteHtml = qte > 0
+    ? `<div class="art-qte-ctrl" onclick="event.stopPropagation()">
+        <button class="art-qte-btn" onclick="decrementArticle('${m.id}')">−</button>
+        <span class="art-qte-val">${qte}</span>
+        <button class="art-qte-btn" onclick="addArticle('${m.id}')">+</button>
+       </div>`
+    : '';
+  return `<span class="art-nom">${m.nom}</span><span class="art-prix">${formatPrice(m.prix)}</span>${qteHtml}`;
 }
 
 function addArticle(menuId) {
   const m = STATE.menu.find(x => x.id === menuId);
   if (!m || !m.actif) return;
   const lignes = getLignes(STATE.editCommande);
-  const newLigne = {
-    id: generateId('ligne'),
-    menuId: m.id,
-    nom: m.nom,
-    categorie: m.categorie,
-    station: m.station,
-    prix: m.prix,
-    qte: 1,
-    statut: 'en_attente',
-    commentaire: '',
-    addedAt: Date.now(),
-  };
-  lignes.push(newLigne);
+  // Incrémenter une ligne existante sans commentaire, sinon créer
+  const existing = lignes.find(l => l.menuId === menuId && !l.commentaire);
+  if (existing) {
+    existing.qte = (existing.qte || 1) + 1;
+  } else {
+    lignes.push({
+      id: generateId('ligne'),
+      menuId: m.id,
+      nom: m.nom,
+      categorie: m.categorie,
+      station: m.station,
+      prix: m.prix,
+      qte: 1,
+      statut: 'en_attente',
+      commentaire: '',
+      addedAt: Date.now(),
+    });
+  }
   saveLignes(STATE.editCommande, lignes);
-  // Refresh panier
+  refreshPanier();
+}
+
+function decrementArticle(menuId) {
+  const lignes = getLignes(STATE.editCommande);
+  const existing = lignes.find(l => l.menuId === menuId && !l.commentaire);
+  if (!existing) return;
+  existing.qte = (existing.qte || 1) - 1;
+  saveLignes(STATE.editCommande, existing.qte <= 0 ? lignes.filter(l => l !== existing) : lignes);
   refreshPanier();
 }
 
@@ -2010,6 +2072,35 @@ function refreshPanier() {
     container.innerHTML = lignes.map(l => buildLigneHtml(l)).join('');
   }
   updatePanierTotal();
+  // Rafraîchir les tuiles articles visibles
+  document.querySelectorAll('[id^="art-"]').forEach(el => {
+    const menuId = el.id.replace('art-', '');
+    const m = STATE.menu.find(x => x.id === menuId);
+    if (!m) return;
+    const qte = getQteInPanier(menuId);
+    el.className = `article-btn ${m.actif ? '' : 'inactive'} ${qte > 0 ? 'in-cart' : ''}`;
+    el.innerHTML = buildArticleTileInner(m, qte);
+  });
+  // Rafraîchir les résultats de recherche visibles
+  document.querySelectorAll('[id^="sart-"]').forEach(el => {
+    const menuId = el.id.replace('sart-', '');
+    const m = STATE.menu.find(x => x.id === menuId);
+    if (!m) return;
+    const qte = getQteInPanier(menuId);
+    el.className = `search-result-item ${qte > 0 ? 'in-cart' : ''}`;
+    const qteHtml = qte > 0
+      ? `<div class="search-result-qte" onclick="event.stopPropagation()">
+          <button class="art-qte-btn" onclick="decrementArticle('${menuId}')">−</button>
+          <span class="art-qte-val">${qte}</span>
+          <button class="art-qte-btn" onclick="addArticle('${menuId}')">+</button>
+         </div>`
+      : '';
+    const prixEl = el.querySelector('.search-result-prix');
+    const prix = prixEl ? prixEl.outerHTML : `<div class="search-result-prix">${formatPrice(m.prix)}</div>`;
+    const infoEl = el.querySelector('.search-result-info');
+    const info = infoEl ? infoEl.outerHTML : `<div class="search-result-info"><div class="search-result-nom">${m.nom}</div><div class="search-result-cat">${m.categorie}</div></div>`;
+    el.innerHTML = info + `<div style="display:flex;align-items:center;gap:8px">${qteHtml}${prix}</div>`;
+  });
   // Mettre à jour footer si besoin
   const footer = document.getElementById('modal-footer');
   if (footer) {
@@ -2527,9 +2618,85 @@ function renderAdmin() {
         <input type="password" id="inp-new-pin" placeholder="Nouveau code PIN">
       </div>
       <button class="btn btn-secondary" style="width:100%" onclick="saveNewPin()">Changer le PIN</button>
+    </div>
+
+    <div class="admin-section">
+      <div class="admin-section-title">Journal d'activité</div>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <button class="btn btn-outline" style="flex:1" onclick="toggleLogView()">Afficher / masquer</button>
+        <button class="btn btn-secondary" style="flex:1" onclick="exporterLogs()">Exporter .txt</button>
+      </div>
+      <div id="log-list" style="display:none;max-height:320px;overflow-y:auto;font-size:12px;font-family:'DM Mono',monospace;background:rgba(0,0,0,.04);border-radius:8px;padding:10px;line-height:1.7">
+        ${buildLogList()}
+      </div>
     </div>`;
 
   el.innerHTML = html;
+}
+
+function buildLogList() {
+  const cmds = [...STATE.commandes].sort((a,b) => (parseInt(b.createdAt)||0) - (parseInt(a.createdAt)||0));
+  if (cmds.length === 0) return '<div style="color:var(--text-muted);padding:8px 0">Aucune activité enregistrée.</div>';
+  return cmds.map(c => {
+    const lignes = getLignes(c);
+    const total = c.total || lignes.reduce((s,l) => s+(parseFloat(l.prix)||0)*(l.qte||1), 0);
+    const label = c.type === 'emporter' ? 'Emporté #' + String(c.table).padStart(4,'0') : 'Table ' + c.table;
+    const dt = c.createdAt ? new Date(parseInt(c.createdAt)).toLocaleString('fr-FR') : '—';
+    const statutColor = { ouverte:'#5C6B3A', brouillon:'#7A6E5F', payée:'#C9A84C', refusée:'#C0522A', en_attente_validation:'#D4831A' };
+    const col = statutColor[c.statut] || '#7A6E5F';
+    return `<div style="border-bottom:1px solid rgba(0,0,0,.07);padding:6px 0">
+      <span style="color:${col};font-weight:700">[${c.statut.toUpperCase()}]</span>
+      <span style="margin:0 6px;font-weight:600">${label}</span>
+      <span style="color:var(--text-muted)">${dt}</span>
+      ${c.couverts ? `<span style="margin-left:6px">👥${c.couverts}</span>` : ''}
+      <span style="float:right;color:var(--or);font-weight:600">${formatPrice(total)}</span>
+      <div style="color:#7A6E5F;font-size:11px;margin-top:2px">${lignes.map(l=>`${l.qte||1}× ${l.nom}${l.commentaire?' ('+l.commentaire+')':''}`).join(' · ')}</div>
+    </div>`;
+  }).join('');
+}
+
+function toggleLogView() {
+  const el = document.getElementById('log-list');
+  if (!el) return;
+  if (el.style.display === 'none') {
+    el.style.display = 'block';
+    el.innerHTML = buildLogList();
+  } else {
+    el.style.display = 'none';
+  }
+}
+
+function exporterLogs() {
+  const cmds = [...STATE.commandes].sort((a,b) => (parseInt(a.createdAt)||0) - (parseInt(b.createdAt)||0));
+  const lines = [];
+  lines.push('=== Journal d\'activité Giovanni ===');
+  lines.push('Exporté le : ' + new Date().toLocaleString('fr-FR'));
+  lines.push('');
+  cmds.forEach(c => {
+    const lignes = getLignes(c);
+    const total = c.total || lignes.reduce((s,l) => s+(parseFloat(l.prix)||0)*(l.qte||1), 0);
+    const label = c.type === 'emporter' ? 'Emporté #' + String(c.table).padStart(4,'0') : 'Table ' + c.table;
+    const dt = c.createdAt ? new Date(parseInt(c.createdAt)).toLocaleString('fr-FR') : '—';
+    const sentDt = c.sentAt ? new Date(parseInt(c.sentAt)).toLocaleString('fr-FR') : null;
+    lines.push('---');
+    lines.push(`[${c.statut.toUpperCase()}] ${label} — ${dt}`);
+    if (c.couverts) lines.push(`Couverts : ${c.couverts}`);
+    if (sentDt) lines.push(`Envoyé en cuisine : ${sentDt}`);
+    if (c.vip) lines.push('★ VIP');
+    lignes.forEach(l => {
+      lines.push(`  ${l.qte||1}× ${l.nom} — ${formatPrice((l.prix||0)*(l.qte||1))}${l.commentaire ? ' ('+l.commentaire+')' : ''}`);
+    });
+    lines.push(`TOTAL : ${formatPrice(total)}`);
+  });
+  lines.push('');
+  lines.push(`=== ${cmds.length} commande(s) — FIN ===`);
+  const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'giovanni-logs-' + new Date().toISOString().slice(0,10) + '.txt';
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 function buildMenuAdminList() {
