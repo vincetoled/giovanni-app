@@ -266,12 +266,10 @@ h1,h2,h3{font-family:'Cormorant Garamond',serif;font-weight:600}
 .article-btn:active{background:rgba(201,168,76,.15);border-color:var(--border-active)}
 .article-btn.inactive{opacity:.4}
 .article-btn.in-cart{background:rgba(201,168,76,.12);border-color:rgba(201,168,76,.35)}
-.article-btn .art-nom{font-size:13px;font-weight:600;line-height:1.3}
+.article-btn .art-nom{font-size:13px;font-weight:600;line-height:1.3;width:100%;text-align:center}
 .article-btn .art-prix{font-size:14px;color:var(--or);font-weight:700}
-.art-qte-ctrl{
-  display:flex;align-items:center;justify-content:center;gap:8px;
-  margin-top:7px;
-}
+.art-bottom-row{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
+.art-qte-ctrl{display:flex;align-items:center;justify-content:center;gap:8px}
 .art-qte-btn{
   width:26px;height:26px;border-radius:50%;
   background:rgba(201,168,76,.2);border:1px solid rgba(201,168,76,.35);
@@ -415,14 +413,30 @@ h1,h2,h3{font-family:'Cormorant Garamond',serif;font-weight:600}
 
 .batch-bandeau{
   background:rgba(201,168,76,.08);border-bottom:1px solid var(--border);
-  padding:8px 12px;
+  padding:10px 12px;
 }
-.batch-title{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.batch-title{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
 .batch-items{display:flex;flex-wrap:wrap;gap:4px}
+.batch-cat-row{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-bottom:4px}
+.batch-cat-label{font-size:10px;font-weight:700;color:var(--or);text-transform:uppercase;
+  letter-spacing:.5px;min-width:110px;margin-right:2px}
 .batch-chip{
   background:rgba(201,168,76,.15);color:var(--or);
   padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;
 }
+.pret-expire-toggle{
+  display:block;width:100%;padding:6px 14px;font-size:11px;
+  color:var(--text-muted);background:transparent;border:none;
+  border-top:1px solid var(--border);cursor:pointer;text-align:center;
+  font-family:inherit;letter-spacing:.3px;
+}
+.pret-expire-toggle:active{opacity:.6}
+.panier-statut-sep{
+  padding:4px 0 2px;font-size:10px;font-weight:700;color:var(--olive);
+  text-transform:uppercase;letter-spacing:.6px;margin-top:6px;
+}
+.panier-ligne.pret-done .panier-nom{color:var(--text-muted);text-decoration:line-through}
+.panier-ligne.pret-done .panier-prix{color:var(--text-muted)}
 
 .station-ligne{
   display:flex;align-items:center;gap:10px;
@@ -839,12 +853,21 @@ h1,h2,h3{font-family:'Cormorant Garamond',serif;font-weight:600}
      VUE SERVICE
      ============================================================ -->
 <div id="view-service" class="view active">
-  <div class="view-header">
-    <h1>Service</h1>
-    <div style="display:flex;align-items:center;gap:8px">
-      <button class="btn btn-secondary" style="padding:6px 12px;font-size:12px" onclick="openSonModal()">🔔</button>
+  <div class="view-header" style="flex-direction:column;align-items:stretch;gap:10px">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <h1>Service</h1>
+      <div style="display:flex;align-items:center;gap:6px">
+        <button class="btn-rupture" style="padding:6px 10px;font-size:11px" onclick="openRuptureModal('service')">⚠ Rupture</button>
+        <button class="btn btn-secondary" style="padding:6px 12px;font-size:12px" onclick="openSonModal()">🔔</button>
+      </div>
+    </div>
+    <div class="article-search" style="margin-bottom:0">
+      <span class="search-icon">🔍</span>
+      <input type="search" id="service-search-input" placeholder="Rechercher un article… (3 lettres min)"
+        oninput="searchServiceArticles(this.value)" autocomplete="off">
     </div>
   </div>
+  <div id="service-search-results-box" style="background:var(--bg);border-bottom:1px solid var(--border);padding:0 12px 8px;display:none"></div>
   <div class="view-content" id="service-content"></div>
 </div>
 
@@ -998,11 +1021,17 @@ let STATE = {
   wakeLock: null,
   burgerWarnings: new Set(),
   pendingClientAlert: false,
+  ruptureContext: null,
   // Edit modal state
   editCommande: null,
   editCatFilter: null,
   ticketCounter: parseInt(localStorage.getItem('gio_ticket') || '0'),
 };
+
+// Tracks when each ligne was marked prêt this session (key: cmdId+'_'+ligneId → timestamp)
+const PRET_TIMES = {};
+// Station-cards where the user clicked to show expired (>30s) prêt items (key: cmdId)
+const SHOW_EXPIRED_PRET = new Set();
 
 // ============================================================
 // TERMINAL ID
@@ -1191,7 +1220,7 @@ function enqueueWrite(action, data) {
 }
 
 async function processWriteQueue() {
-  if (STATE.writeQueue.length === 0) { STATE.writeInProgress = false; return; }
+  if (STATE.writeQueue.length === 0) { STATE.writeInProgress = false; pollCommandes(); return; }
   STATE.writeInProgress = true;
   const { action, data, resolve, reject } = STATE.writeQueue.shift();
   let result;
@@ -1248,6 +1277,9 @@ async function pollCommandes() {
   if (!CONFIG.APPS_SCRIPT_URL) return;
   try {
     const res = await apiGet('getCommandes');
+    // Si un write est en cours ou en attente, les données serveur sont périmées
+    // → ne pas écraser les mises à jour optimistes
+    if (STATE.writeInProgress || STATE.writeQueue.length > 0) return;
     if (res.commandes) {
       setOnline(true);
       const prev = new Map(STATE.commandes.map(c => [c.id, c]));
@@ -1456,7 +1488,7 @@ function renderTableCard(c) {
        </div>`
     : '';
 
-  return `<div class="${cardClass}" onclick="openModalEditCommande('${c.id}')" data-cmdid="${c.id}" data-sentAt="${c.sentAt || c.createdAt}">
+  return `<div class="${cardClass}" onclick="openTableActions('${c.id}')" data-cmdid="${c.id}" data-sentAt="${c.sentAt || c.createdAt}">
     <div style="display:flex;align-items:flex-start;justify-content:space-between">
       <div class="table-num">${c.table}</div>
       ${c.couverts ? `<div class="table-info">👥 ${c.couverts}</div>` : ''}
@@ -1480,7 +1512,7 @@ function renderEmporterCard(c) {
   const pretAll = isPretAll(c);
   const totalItems = lignes.reduce((s,l) => s + (l.qte||1), 0);
 
-  return `<div class="emporter-card" onclick="openModalEditCommande('${c.id}')" data-cmdid="${c.id}" data-sentAt="${c.sentAt||c.createdAt}">
+  return `<div class="emporter-card" onclick="openTableActions('${c.id}')" data-cmdid="${c.id}" data-sentAt="${c.sentAt||c.createdAt}">
     <div class="emporter-num">#${String(c.table).padStart(4,'0')}</div>
     <div style="font-size:12px;color:var(--text-muted)">${totalItems} article${totalItems>1?'s':''}</div>
     ${pretAll ? '<span class="pret-all-badge">✓ Prêt</span>' : ''}
@@ -1500,6 +1532,40 @@ function isPretPartial(cmd) {
   const hasPret = lignes.some(l => l.statut === 'prêt' || l.statut === 'servi');
   const hasPending = lignes.some(l => l.statut === 'en_attente' || l.statut === 'en préparation');
   return hasPret && hasPending;
+}
+
+// ============================================================
+// QUICK ACTIONS — TABLE CARD (ouverte : choix mise à jour / encaisser)
+// ============================================================
+function openTableActions(cmdId) {
+  const cmd = STATE.commandes.find(c => c.id === cmdId);
+  if (!cmd) return;
+  // Brouillon / en_attente_validation : ouvrir directement la modale
+  if (cmd.statut !== 'ouverte') { openModalEditCommande(cmdId); return; }
+
+  const lignes = getLignes(cmd);
+  const total = lignes.reduce((s,l) => s + (parseFloat(l.prix)||0)*(l.qte||1), 0);
+  const totalItems = lignes.reduce((s,l) => s + (l.qte||1), 0);
+  const label = cmd.type === 'emporter'
+    ? 'Emporté #' + String(cmd.table).padStart(4,'0')
+    : 'Table ' + cmd.table;
+
+  const box = document.getElementById('confirm-popup-box');
+  box.innerHTML = `
+    <div class="confirm-popup-title">${label}</div>
+    <div class="confirm-popup-detail">${totalItems} article${totalItems>1?'s':''} · ${formatPrice(total)}</div>
+    <div class="confirm-popup-btns">
+      <button class="confirm-popup-cancel" onclick="closeConfirmPopup();openModalEditCommande('${cmdId}')">✏️ Mise à jour</button>
+      <button class="confirm-popup-ok" style="background:#5C6B3A" onclick="closeConfirmPopup();encaisserDirect('${cmdId}')">💳 Encaisser</button>
+    </div>`;
+  document.getElementById('confirm-popup-overlay').classList.add('active');
+}
+
+async function encaisserDirect(cmdId) {
+  const cmd = STATE.commandes.find(c => c.id === cmdId);
+  if (!cmd) return;
+  STATE.editCommande = cmd;
+  encaisser();
 }
 
 function showPretDetail(cmdId, e) {
@@ -1857,7 +1923,14 @@ function showModalArticles() {
     </div>`;
   });
 
-  let panierHtml = lignes.map(l => buildLigneHtml(l)).join('');
+  // Trier : articles non prêts en haut, prêts en bas
+  const lignesNonPret = lignes.filter(l => l.statut !== 'prêt' && l.statut !== 'servi');
+  const lignesPretServi = lignes.filter(l => l.statut === 'prêt' || l.statut === 'servi');
+  let panierHtml = lignesNonPret.map(l => buildLigneHtml(l)).join('');
+  if (lignesPretServi.length > 0) {
+    panierHtml += `<div class="panier-statut-sep">✓ Prêt / Servi (${lignesPretServi.length})</div>`;
+    panierHtml += lignesPretServi.map(l => buildLigneHtml(l, true)).join('');
+  }
 
   document.getElementById('modal-body').innerHTML = `
     <div class="article-search">
@@ -1906,7 +1979,7 @@ function getChipsForLigne(l) {
   return all.filter(c => !CHIPS_CUISSON.includes(c)); // plats standards : accompagnement, pas cuisson
 }
 
-function buildLigneHtml(l) {
+function buildLigneHtml(l, isDone) {
   const chips = getChipsForLigne(l);
   const activeChips = l.commentaire ? l.commentaire.split(' · ').filter(Boolean) : [];
   const hasDetail = activeChips.length > 0;
@@ -1920,9 +1993,13 @@ function buildLigneHtml(l) {
   const suppLink = (l.commentaire || '').startsWith('→')
     ? `<span class="supp-link">${l.commentaire}</span>` : '';
 
-  return `<div class="panier-ligne" id="ligne-${l.id}">
+  const statutBadge = isDone
+    ? `<span style="font-size:10px;color:var(--olive);font-weight:700;margin-right:4px">${l.statut === 'servi' ? 'servi' : '✓'}</span>`
+    : '';
+
+  return `<div class="panier-ligne${isDone ? ' pret-done' : ''}" id="ligne-${l.id}">
     <div class="panier-ligne-header" onclick="toggleLigneDetail('${l.id}')">
-      <span class="panier-nom">${(l.qte||1) > 1 ? (l.qte||1)+'× ' : ''}${l.nom}${suppLink}${commentIndicator}</span>
+      ${statutBadge}<span class="panier-nom">${(l.qte||1) > 1 ? (l.qte||1)+'× ' : ''}${l.nom}${suppLink}${commentIndicator}</span>
       <span class="panier-prix">${formatPrice((l.prix||0) * (l.qte||1))}</span>
       <div class="qte-ctrl" onclick="event.stopPropagation()">
         <button class="qte-btn" onclick="updateQte('${l.id}',-1)">−</button>
@@ -1992,6 +2069,50 @@ function searchArticles(query) {
   }).join('') + '</div>';
 }
 
+// ============================================================
+// RECHERCHE ARTICLES — VUE SERVICE (barre permanente en haut)
+// ============================================================
+function searchServiceArticles(query) {
+  const box = document.getElementById('service-search-results-box');
+  if (!box) return;
+  const q = query.trim().toLowerCase();
+  if (q.length < 3) {
+    box.style.display = 'none';
+    box.innerHTML = '';
+    return;
+  }
+  // Inclut les articles en rupture (actif=false) pour permettre de voir leur statut
+  const results = STATE.menu.filter(m => m.nom.toLowerCase().includes(q)).slice(0, 12);
+  box.style.display = 'block';
+  if (results.length === 0) {
+    box.innerHTML = '<div style="padding:12px;text-align:center;color:var(--text-muted);font-size:13px">Aucun résultat</div>';
+    return;
+  }
+  box.innerHTML = '<div class="search-results">' + results.map(m => {
+    const ruptureTag = !m.actif
+      ? `<span style="font-size:10px;font-weight:700;color:var(--terre);background:rgba(192,82,42,.15);border:1px solid rgba(192,82,42,.3);border-radius:10px;padding:2px 7px;white-space:nowrap">RUPTURE</span>`
+      : '';
+    return `<div class="search-result-item" onclick="toggleRuptureFromServiceSearch('${m.id}')">
+      <div class="search-result-info">
+        <div class="search-result-nom" style="${!m.actif ? 'text-decoration:line-through;color:var(--text-muted)' : ''}">${m.nom}</div>
+        <div class="search-result-cat">${m.categorie}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        ${ruptureTag}
+        <div class="search-result-prix" style="${!m.actif ? 'color:var(--text-muted)' : ''}">${formatPrice(m.prix)}</div>
+      </div>
+    </div>`;
+  }).join('') + '</div>';
+}
+
+async function toggleRuptureFromServiceSearch(menuId) {
+  // Toggle rupture sans ouvrir la modale de gestion
+  await toggleRupture(menuId, false);
+  // Rafraîchit les résultats de recherche
+  const input = document.getElementById('service-search-input');
+  if (input) searchServiceArticles(input.value);
+}
+
 function getQteInPanier(menuId) {
   return getLignes(STATE.editCommande)
     .filter(l => l.menuId === menuId)
@@ -2006,7 +2127,7 @@ function buildArticleTileInner(m, qte) {
         <button class="art-qte-btn" onclick="addArticle('${m.id}')">+</button>
        </div>`
     : '';
-  return `<span class="art-nom">${m.nom}</span><span class="art-prix">${formatPrice(m.prix)}</span>${qteHtml}`;
+  return `<span class="art-nom">${m.nom}</span><div class="art-bottom-row"><span class="art-prix">${formatPrice(m.prix)}</span>${qteHtml}</div>`;
 }
 
 function addArticle(menuId) {
@@ -2325,23 +2446,28 @@ function renderStation(station) {
     return;
   }
 
-  // Bandeau BATCH : regrouper les articles en_attente par nom
-  const batchMap = {};
+  // Bandeau BATCH : regrouper les articles en_attente par catégorie puis par nom
+  const batchByCat = {}; // { categorie: { nom: qte } }
   relevant.forEach(c => {
     getLignes(c).filter(l => l.station === station && l.statut === 'en_attente').forEach(l => {
-      const key = l.nom;
-      batchMap[key] = (batchMap[key] || 0) + (l.qte || 1);
+      const cat = l.categorie || '—';
+      if (!batchByCat[cat]) batchByCat[cat] = {};
+      batchByCat[cat][l.nom] = (batchByCat[cat][l.nom] || 0) + (l.qte || 1);
     });
   });
-  let batchHtml = Object.entries(batchMap).map(([nom, qte]) =>
-    `<span class="batch-chip">${qte}× ${nom}</span>`
-  ).join('');
 
   let html = '';
-  if (batchHtml) {
+  const catEntries = Object.entries(batchByCat);
+  if (catEntries.length > 0) {
+    const rowsHtml = catEntries.map(([cat, items]) => {
+      const chipsHtml = Object.entries(items).map(([nom, qte]) =>
+        `<span class="batch-chip">${qte}× ${nom}</span>`
+      ).join('');
+      return `<div class="batch-cat-row"><span class="batch-cat-label">${cat}</span>${chipsHtml}</div>`;
+    }).join('');
     html += `<div class="batch-bandeau">
-      <div class="batch-title">En attente — récap</div>
-      <div class="batch-items">${batchHtml}</div>
+      <div class="batch-title">En attente — récap par catégorie</div>
+      <div class="batch-items" style="flex-direction:column;gap:0">${rowsHtml}</div>
     </div>`;
   }
 
@@ -2360,6 +2486,33 @@ function renderStation(station) {
 
     const lignesEnAttente = lignes.filter(l => l.statut !== 'prêt');
     const lignesPret = lignes.filter(l => l.statut === 'prêt');
+    // Séparer prêt récents (<30s) des expirés (>30s)
+    const HIDE_DELAY = 30000;
+    const lignesPretRecent = lignesPret.filter(l => {
+      const t = PRET_TIMES[c.id + '_' + l.id];
+      return t && (now - t) < HIDE_DELAY;
+    });
+    const lignesPretExpires = lignesPret.filter(l => {
+      const t = PRET_TIMES[c.id + '_' + l.id];
+      return !t || (now - t) >= HIDE_DELAY;
+    });
+    const showExpired = SHOW_EXPIRED_PRET.has(c.id);
+
+    let pretSection = '';
+    if (lignesPretRecent.length > 0) {
+      pretSection += `<div class="station-pret-sep">✓ Prêt (${lignesPret.length})</div>`;
+      pretSection += lignesPretRecent.map(l => buildStationLigne(c, l, station)).join('');
+    } else if (lignesPret.length > 0) {
+      pretSection += `<div class="station-pret-sep">✓ Prêt (${lignesPret.length})</div>`;
+    }
+    if (lignesPretExpires.length > 0) {
+      if (showExpired) {
+        pretSection += lignesPretExpires.map(l => buildStationLigne(c, l, station)).join('');
+        pretSection += `<button class="pret-expire-toggle" onclick="toggleShowExpiredPret('${c.id}','${station}')">▲ Masquer les terminés</button>`;
+      } else {
+        pretSection += `<button class="pret-expire-toggle" onclick="toggleShowExpiredPret('${c.id}','${station}')">👁 ${lignesPretExpires.length} plat${lignesPretExpires.length > 1 ? 's' : ''} déjà terminé${lignesPretExpires.length > 1 ? 's' : ''} — voir</button>`;
+      }
+    }
 
     html += `<div class="station-card">
       ${allergie ? `<div class="allergie-bandeau">⚠ Allergie : ${allergie}</div>` : ''}
@@ -2371,7 +2524,7 @@ function renderStation(station) {
       </div>
       <div>
         ${lignesEnAttente.map(l => buildStationLigne(c, l, station)).join('')}
-        ${lignesPret.length > 0 ? `<div class="station-pret-sep">✓ Prêt (${lignesPret.length})</div>${lignesPret.map(l => buildStationLigne(c, l, station)).join('')}` : ''}
+        ${pretSection}
       </div>
       <div style="padding:8px 12px">
         <button class="btn btn-success" style="padding:8px;font-size:13px;width:100%;background:#5C6B3A"
@@ -2395,7 +2548,7 @@ function buildStationLigne(cmd, l, station) {
 
   return `<div class="station-ligne ${isPret ? 'pret' : ''} ${isRed ? 'blink-red' : ''}"
     data-cmdid="${cmd.id}" data-ligneid="${l.id}"
-    onclick="${isPret ? '' : `showConfirmPretLigne('${cmd.id}','${l.id}','${nomEsc}','${commentEsc}')`}">
+    onclick="${isPret ? '' : `marquerPretLigne('${cmd.id}','${l.id}')`}">
     <div style="flex:1">
       <div style="display:flex;align-items:center;gap:6px">
         <span class="ligne-qte">${l.qte||1}×</span>
@@ -2516,6 +2669,7 @@ async function marquerPretLigne(cmdId, ligneId) {
   const l = lignes.find(x => x.id === ligneId);
   if (!l || l.statut === 'prêt') return;
   l.statut = 'prêt';
+  PRET_TIMES[cmdId + '_' + ligneId] = Date.now();
   saveLignes(cmd, lignes);
   cmd.updatedAt = Date.now();
   renderCurrentView();
@@ -2526,12 +2680,22 @@ async function marquerToutPret(cmdId, station) {
   const cmd = STATE.commandes.find(c => c.id === cmdId);
   if (!cmd) return;
   const lignes = getLignes(cmd);
-  lignes.filter(l => l.station === station && l.statut === 'en_attente').forEach(l => l.statut = 'prêt');
+  const now = Date.now();
+  lignes.filter(l => l.station === station && l.statut === 'en_attente').forEach(l => {
+    l.statut = 'prêt';
+    PRET_TIMES[cmdId + '_' + l.id] = now;
+  });
   saveLignes(cmd, lignes);
   cmd.updatedAt = Date.now();
   showToast('Table prête ✓', 'success');
   renderCurrentView();
   enqueueWrite('saveCommande', cmd).catch(() => showToast('Erreur réseau', 'error'));
+}
+
+function toggleShowExpiredPret(cmdId, station) {
+  if (SHOW_EXPIRED_PRET.has(cmdId)) SHOW_EXPIRED_PRET.delete(cmdId);
+  else SHOW_EXPIRED_PRET.add(cmdId);
+  renderStation(station);
 }
 
 async function marquerToutPretStation(station) {
@@ -2553,32 +2717,46 @@ async function marquerToutPretStation(station) {
 // ============================================================
 // MODAL RUPTURE
 // ============================================================
+function buildRuptureItem(m) {
+  return `<div class="rupture-item">
+    <span class="rupture-nom">${m.nom}</span>
+    <div class="toggle-switch ${m.actif ? 'on' : 'off'}" onclick="toggleRupture('${m.id}')">
+      <div class="toggle-knob"></div>
+    </div>
+  </div>`;
+}
+
 function openRuptureModal(station) {
-  const items = STATE.menu.filter(m => m.station === station);
+  STATE.ruptureContext = station;
   document.getElementById('modal-title').textContent = 'Gestion des ruptures';
-  const body = items.map(m => {
-    const isActif = m.actif;
-    return `<div class="rupture-item">
-      <span class="rupture-nom">${m.nom}</span>
-      <div class="toggle-switch ${isActif ? 'on' : 'off'}" onclick="toggleRupture('${m.id}')">
-        <div class="toggle-knob"></div>
-      </div>
-    </div>`;
-  }).join('');
+  let body;
+  if (station === 'service') {
+    // Affiche tous les articles groupés par station
+    const stations = [...new Set(STATE.menu.map(m => m.station).filter(Boolean))];
+    body = stations.map(s => {
+      const items = STATE.menu.filter(m => m.station === s);
+      const label = s.charAt(0).toUpperCase() + s.slice(1);
+      return `<div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;padding:10px 0 4px;margin-top:4px">${label}</div>`
+        + items.map(m => buildRuptureItem(m)).join('');
+    }).join('');
+    if (!body) body = '<div style="padding:16px;color:var(--text-muted);font-size:13px;text-align:center">Aucun article dans le menu</div>';
+  } else {
+    const items = STATE.menu.filter(m => m.station === station);
+    body = items.map(m => buildRuptureItem(m)).join('');
+  }
   document.getElementById('modal-body').innerHTML = body;
   document.getElementById('modal-footer').innerHTML =
     '<button class="btn btn-secondary" onclick="closeModal()">Fermer</button>';
   openModal();
 }
 
-async function toggleRupture(menuId) {
+async function toggleRupture(menuId, doRefreshModal = true) {
   const m = STATE.menu.find(x => x.id === menuId);
   if (!m) return;
   m.actif = !m.actif;
   try {
     await enqueueWrite('saveMenuArticle', { id: m.id, categorie: m.categorie, nom: m.nom, prix: m.prix, actif: m.actif, station: m.station });
-    // Refresh rupture modal
-    openRuptureModal(m.station);
+    if (doRefreshModal) openRuptureModal(STATE.ruptureContext || m.station);
     showToast(m.actif ? 'Article disponible' : 'Article en rupture', m.actif ? 'success' : 'warning');
   } catch(e) { showToast('Erreur', 'error'); m.actif = !m.actif; }
 }
