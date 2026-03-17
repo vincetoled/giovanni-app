@@ -1,0 +1,84 @@
+/* ============================================================
+   VUE ADMIN
+   ============================================================ */
+.admin-section{margin-bottom:20px}
+.admin-section-title{
+  font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--or);
+  margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border);
+}
+.stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:8px}
+.stat-card{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:12px;text-align:center;
+}
+.stat-val{font-size:28px;font-weight:700;color:var(--or)}
+.stat-label{font-size:11px;color:var(--text-muted);margin-top:2px}
+
+.menu-admin-item{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:10px 12px;
+  margin-bottom:6px;display:flex;align-items:center;gap:10px;
+}
+.menu-admin-item.inactive{opacity:.5}
+.menu-admin-nom{flex:1;font-size:13px}
+.menu-admin-prix{font-size:13px;color:var(--or);font-weight:600;white-space:nowrap}
+.menu-admin-cat{font-size:10px;color:var(--text-muted)}
+
+.form-group{margin-bottom:12px}
+.form-label{font-size:12px;color:var(--text-muted);margin-bottom:4px;display:block}
+
+.config-row{
+  display:flex;align-items:center;gap:8px;
+  padding:10px 0;border-bottom:1px solid var(--border);
+}
+.config-row:last-child{border-bottom:none}
+.config-label{flex:1;font-size:13px}
+.config-val{font-size:13px;color:var(--or);font-weight:600}
+
+.chips-config-list{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.chip-config{
+  padding:4px 12px;border-radius:20px;font-size:12px;
+  background:rgba(255,255,255,.06);border:1px solid var(--border);
+  display:flex;align-items:center;gap:6px;
+}
+.chip-config-del{color:var(--terre);font-size:14px;cursor:pointer}
+
+/* ============================================================
+   PIN MODAL
+   ============================================================ */
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+.pin-btn{
+  background:rgba(255,255,255,.07);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:14px;
+  font-size:20px;font-weight:500;text-align:center;
+  transition:background .1s;
+}
+.pin-btn:active{background:rgba(201,168,76,.2)}
+.pin-display{
+  letter-spacing:8px;font-size:24px;text-align:center;
+  padding:12px;color:var(--or);min-height:50px;
+}
+
+/* ============================================================
+   MODAL RUPTURE
+   ============================================================ */
+.rupture-item{
+  display:flex;align-items:center;gap:10px;
+  padding:10px;background:var(--bg-card);
+  border:1px solid var(--border);border-radius:var(--radius-sm);
+  margin-bottom:6px;
+}
+.rupture-nom{flex:1;font-size:13px}
+.toggle-switch{
+  width:44px;height:24px;border-radius:12px;
+  background:rgba(255,255,255,.1);position:relative;cursor:pointer;
+  transition:background .2s;flex-shrink:0;
+}
+.toggle-switch.on{background:var(--green)}
+.toggle-switch.off{background:var(--terre)}
+.toggle-knob{
+  position:absolute;top:3px;width:18px;height:18px;
+  border-radius:50%;background:#fff;transition:left .2s;
+}
+.toggle-switch.on .toggle-knob{left:23px}
+.toggle-switch.off .toggle-knob{left:3px}
