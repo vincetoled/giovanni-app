@@ -72,7 +72,9 @@ h1,h2,h3{font-family:'Cormorant Garamond',serif;font-weight:600}
   border-top:1px solid var(--border);
   display:grid;grid-template-columns:repeat(4,1fr);
   z-index:100;
+  transition:transform .35s cubic-bezier(.4,0,.2,1);
 }
+.nav-bottom.nav-hidden{transform:translateY(100%)}
 .nav-btn{
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   gap:3px;padding:6px 4px;
@@ -466,6 +468,11 @@ h1,h2,h3{font-family:'Cormorant Garamond',serif;font-weight:600}
 .station-ligne.blink-red{animation:blinkRed 1s ease-in-out infinite}
 @keyframes blinkRed{0%,100%{background:transparent}50%{background:rgba(217,79,79,.15)}}
 
+.station-section-sep{
+  padding:8px 14px;font-size:11px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.8px;
+  margin:8px 0 2px;border-radius:var(--radius-sm);
+}
 .swipe-indicator{
   position:absolute;left:0;top:0;bottom:0;
   background:linear-gradient(90deg,rgba(76,175,125,.5),transparent);
@@ -805,6 +812,80 @@ h1,h2,h3{font-family:'Cormorant Garamond',serif;font-weight:600}
 .cat-picker-label{font-size:14px;font-weight:500;color:var(--text);line-height:1.2}
 .cat-picker-sub{font-size:11px;color:var(--text-muted);margin-top:2px}
 
+/* Contenance bottom-sheet */
+.contenance-overlay{
+  position:fixed;inset:0;z-index:900;
+  background:rgba(0,0,0,.6);
+  display:none;align-items:flex-end;
+}
+.contenance-overlay.active{display:flex}
+.contenance-sheet{
+  width:100%;background:#1E1C19;
+  border-radius:14px 14px 0 0;
+  padding:20px 16px calc(20px + env(safe-area-inset-bottom,0px));
+  max-height:70vh;overflow-y:auto;
+}
+.contenance-sheet-handle{
+  width:36px;height:4px;border-radius:2px;
+  background:rgba(255,255,255,.2);
+  margin:0 auto 16px;
+}
+.contenance-sheet-title{
+  font-family:'Cormorant Garamond',serif;
+  font-size:18px;color:var(--text);margin-bottom:4px;
+}
+.contenance-sheet-sub{
+  font-size:12px;color:var(--text-muted);font-style:italic;margin-bottom:16px;
+}
+.contenance-grid{
+  display:grid;grid-template-columns:repeat(2,1fr);gap:8px;
+}
+.contenance-tile{
+  border-radius:10px;padding:14px 10px;
+  background:rgba(245,240,232,.06);
+  border:1px solid rgba(201,168,76,.2);
+  cursor:pointer;text-align:center;
+  transition:all .15s;
+}
+.contenance-tile:active{
+  background:rgba(201,168,76,.15);border-color:var(--or);
+}
+.contenance-taille{
+  font-family:'DM Mono',monospace;font-size:14px;color:var(--text);
+}
+.contenance-prix{
+  font-size:13px;color:var(--or);margin-top:4px;
+  font-family:'DM Sans',sans-serif;
+}
+
+/* Options picker (per-article) */
+.options-picker-overlay{
+  position:fixed;inset:0;z-index:900;
+  background:rgba(0,0,0,.6);
+  display:none;align-items:flex-end;
+}
+.options-picker-overlay.active{display:flex}
+.options-picker-sheet{
+  width:100%;background:#1E1C19;
+  border-radius:14px 14px 0 0;
+  padding:20px 16px calc(20px + env(safe-area-inset-bottom,0px));
+  max-height:75vh;overflow-y:auto;
+}
+.options-group-label{
+  font-size:12px;font-weight:600;color:var(--text-muted);
+  text-transform:uppercase;letter-spacing:.5px;margin:12px 0 6px;
+}
+.options-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px}
+.option-chip{
+  padding:6px 14px;border-radius:20px;font-size:13px;
+  background:rgba(245,240,232,.06);border:1px solid var(--border);
+  cursor:pointer;transition:all .15s;color:var(--text-muted);
+  font-family:'DM Sans',sans-serif;
+}
+.option-chip.active{
+  background:rgba(201,168,76,.15);color:var(--or);border-color:var(--or);
+}
+
 /* Search bar — articles */
 .article-search{position:relative;margin-bottom:8px;flex-shrink:0}
 .article-search input{
@@ -840,10 +921,9 @@ h1,h2,h3{font-family:'Cormorant Garamond',serif;font-weight:600}
 <!-- Banner offline -->
 <div id="banner-offline" class="banner-offline">⚠ Connexion perdue — Vérifiez votre Wi-Fi</div>
 
-<!-- Debug panel -->
-<button onclick="toggleDebug()" style="position:fixed;top:6px;right:6px;z-index:10000;background:#222;color:#0f0;font-size:10px;padding:2px 6px;border:1px solid #0f0;border-radius:4px;opacity:0.7;">🐛</button>
-<div id="debug-wrap" style="position:fixed;top:30px;right:0;width:320px;z-index:10000;display:none;">
-  <div id="debug-panel" style="background:#111;color:#0f0;font-family:monospace;font-size:10px;max-height:220px;overflow-y:auto;padding:4px;border:1px solid #0f0;"></div>
+<!-- Debug panel (visible uniquement Admin) -->
+<div id="debug-wrap" style="display:none;">
+  <div id="debug-panel"></div>
 </div>
 
 <!-- Toast container -->
@@ -853,21 +933,13 @@ h1,h2,h3{font-family:'Cormorant Garamond',serif;font-weight:600}
      VUE SERVICE
      ============================================================ -->
 <div id="view-service" class="view active">
-  <div class="view-header" style="flex-direction:column;align-items:stretch;gap:10px">
-    <div style="display:flex;align-items:center;justify-content:space-between">
-      <h1>Service</h1>
-      <div style="display:flex;align-items:center;gap:6px">
-        <button class="btn-rupture" style="padding:6px 10px;font-size:11px" onclick="openRuptureModal('service')">⚠ Rupture</button>
-        <button class="btn btn-secondary" style="padding:6px 12px;font-size:12px" onclick="openSonModal()">🔔</button>
-      </div>
-    </div>
-    <div class="article-search" style="margin-bottom:0">
-      <span class="search-icon">🔍</span>
-      <input type="search" id="service-search-input" placeholder="Rechercher un article… (3 lettres min)"
-        oninput="searchServiceArticles(this.value)" autocomplete="off">
+  <div class="view-header">
+    <h1>Service</h1>
+    <div style="display:flex;align-items:center;gap:6px">
+      <button class="btn-rupture" style="padding:6px 10px;font-size:11px" onclick="openRuptureModal('service')">⚠ Rupture</button>
+      <button class="btn btn-secondary" style="padding:6px 12px;font-size:12px" onclick="openSonModal()">🔔</button>
     </div>
   </div>
-  <div id="service-search-results-box" style="background:var(--bg);border-bottom:1px solid var(--border);padding:0 12px 8px;display:none"></div>
   <div class="view-content" id="service-content"></div>
 </div>
 
@@ -958,6 +1030,30 @@ h1,h2,h3{font-family:'Cormorant Garamond',serif;font-weight:600}
   <div class="confirm-popup" id="confirm-popup-box"></div>
 </div>
 
+<!-- Contenance bottom-sheet -->
+<div class="contenance-overlay" id="contenance-overlay" onclick="closeContenanceSheet()">
+  <div class="contenance-sheet" onclick="event.stopPropagation()">
+    <div class="contenance-sheet-handle"></div>
+    <div class="contenance-sheet-title" id="contenance-sheet-title"></div>
+    <div class="contenance-sheet-sub" id="contenance-sheet-sub"></div>
+    <div class="contenance-grid" id="contenance-grid"></div>
+  </div>
+</div>
+
+<!-- Options picker bottom-sheet -->
+<div class="options-picker-overlay" id="options-picker-overlay">
+  <div class="options-picker-sheet" onclick="event.stopPropagation()">
+    <div class="contenance-sheet-handle"></div>
+    <div class="contenance-sheet-title" id="options-picker-title"></div>
+    <div class="contenance-sheet-sub" id="options-picker-sub"></div>
+    <div id="options-picker-body"></div>
+    <div style="margin-top:14px;display:flex;gap:8px">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeOptionsPicker()">Annuler</button>
+      <button class="btn btn-primary" style="flex:2" onclick="confirmOptionsAndAdd()">Ajouter →</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal PIN Admin -->
 <div id="modal-pin" class="modal-overlay" style="align-items:center;padding:24px">
   <div style="background:var(--bg-modal);border-radius:var(--radius);padding:24px;width:100%;max-width:320px">
@@ -990,8 +1086,9 @@ const CONFIG = {
   APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbx0wSPwI7fA-oOWbmkscPssXGq1eHtJShkESvo91gpycVLPU2an4jVgAhnmGCnMixTMgQ/exec",
   POLL_SERVICE: 4000,
   POLL_STATION: 6000,
-  FETCH_TIMEOUT: 8000,
+  FETCH_TIMEOUT: 15000,   // Augmenté 8→15s (GAS peut être lent au réveil)
   RETRY_DELAY: 2000,
+  OFFLINE_FAILURES_THRESHOLD: 3,  // Nb d'échecs consécutifs avant afficher "offline"
 };
 
 // ============================================================
@@ -1010,6 +1107,7 @@ let STATE = {
   currentView: 'service',
   adminUnlocked: false,
   isOnline: true,
+  consecutiveFailures: 0,  // Compteur pour éviter les faux "offline"
   writeQueue: [],
   writeInProgress: false,
   terminalId: '',
@@ -1020,6 +1118,7 @@ let STATE = {
   audioCtx: null,
   wakeLock: null,
   burgerWarnings: new Set(),
+  winePopupShown: new Set(),   // Tables ayant déjà vu le popup vin
   pendingClientAlert: false,
   ruptureContext: null,
   // Edit modal state
@@ -1281,6 +1380,7 @@ async function pollCommandes() {
     // → ne pas écraser les mises à jour optimistes
     if (STATE.writeInProgress || STATE.writeQueue.length > 0) return;
     if (res.commandes) {
+      STATE.consecutiveFailures = 0;
       setOnline(true);
       const prev = new Map(STATE.commandes.map(c => [c.id, c]));
       const freshIds = new Set(res.commandes.map(c => c.id));
@@ -1317,7 +1417,10 @@ async function pollCommandes() {
       updateNavBadges();
     }
   } catch(e) {
-    setOnline(false);
+    STATE.consecutiveFailures = (STATE.consecutiveFailures || 0) + 1;
+    if (STATE.consecutiveFailures >= CONFIG.OFFLINE_FAILURES_THRESHOLD) {
+      setOnline(false);
+    }
   }
 }
 
@@ -1355,6 +1458,7 @@ function showView(name) {
     showPinModal();
     return;
   }
+  showBottomNav();
   STATE.currentView = name;
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -1419,7 +1523,7 @@ function renderService() {
 
   // Tables sur place
   html += '<div class="section-title">Tables</div>';
-  html += '<div class="tables-grid">';
+  html += '<div class="tables-grid" style="grid-template-columns:1fr">';
 
   // Récupérer toutes les tables occupées
   const tableNums = new Set(surPlace.map(c => c.table));
@@ -1472,6 +1576,7 @@ function renderTableCard(c) {
   if (isBrouillon) badges += '<span class="badge badge-brouillon">Brouillon</span>';
   if (pretAll) badges += `<span class="pret-all-badge pret-all-badge-clickable" onclick="event.stopPropagation();showPretDetail('${c.id}',event)">✓ Tout prêt</span>`;
   if (pretPartial) badges += `<span class="pret-partial-badge" onclick="event.stopPropagation();showPretDetail('${c.id}',event)">◑ En partie prêt</span>`;
+  if (c.zone) badges += `<span class="badge" style="background:rgba(107,140,58,.15);color:#6B8C3A;border-color:rgba(107,140,58,.3)">${c.zone}</span>`;
 
   let cardClass = 'table-card';
   if (c.statut !== 'brouillon') cardClass += ' has-order';
@@ -1483,7 +1588,7 @@ function renderTableCard(c) {
 
   const burgerBanner = STATE.burgerWarnings.has(c.id)
     ? `<div class="burger-warning" id="burger-warning-${c.id}">
-        <span>⏱ Cette commande contient un burger — pensez à prévenir le client que la préparation peut prendre plus de temps.</span>
+        <span>⏱ Burger — prévoir +5 min de cuisson</span>
         <button class="burger-warning-close" onclick="event.stopPropagation();closeBurgerWarning('${c.id}')">✕</button>
        </div>`
     : '';
@@ -1550,13 +1655,20 @@ function openTableActions(cmdId) {
     ? 'Emporté #' + String(cmd.table).padStart(4,'0')
     : 'Table ' + cmd.table;
 
+  // Résumé des 4 premiers articles pour le popup
+  const topItems = lignes.slice(0,4).map(l => `<span style="display:block;font-size:12px;color:#7A6E5F;padding:1px 0">${l.qte||1}× ${l.nom}</span>`).join('');
+  const moreItems = lignes.length > 4 ? `<span style="font-size:11px;color:#7A6E5F">…et ${lignes.length-4} autre${lignes.length-4>1?'s':''}</span>` : '';
+
   const box = document.getElementById('confirm-popup-box');
   box.innerHTML = `
-    <div class="confirm-popup-title">${label}</div>
-    <div class="confirm-popup-detail">${totalItems} article${totalItems>1?'s':''} · ${formatPrice(total)}</div>
-    <div class="confirm-popup-btns">
-      <button class="confirm-popup-cancel" onclick="closeConfirmPopup();openModalEditCommande('${cmdId}')">✏️ Mise à jour</button>
-      <button class="confirm-popup-ok" style="background:#5C6B3A" onclick="closeConfirmPopup();encaisserDirect('${cmdId}')">💳 Encaisser</button>
+    <div class="confirm-popup-title">${label}${cmd.vip ? ' ⭐' : ''}</div>
+    <div class="confirm-popup-detail">${totalItems} article${totalItems>1?'s':''} · <strong>${formatPrice(total)}</strong></div>
+    <div style="margin-bottom:14px">${topItems}${moreItems}</div>
+    <button class="confirm-popup-ok" style="width:100%;margin-bottom:8px;background:#5C6B3A;font-size:15px;padding:14px"
+      onclick="closeConfirmPopup();encaisserDirect('${cmdId}')">💳 Encaisser — ${formatPrice(total)}</button>
+    <div class="confirm-popup-btns" style="margin-top:0">
+      <button class="confirm-popup-cancel" onclick="closeConfirmPopup();openModalEditCommande('${cmdId}')">✏️ Modifier</button>
+      <button class="confirm-popup-cancel" onclick="closeConfirmPopup();showPretDetail('${cmdId}',null)">📋 Détail</button>
     </div>`;
   document.getElementById('confirm-popup-overlay').classList.add('active');
 }
@@ -1593,9 +1705,11 @@ function showPretDetail(cmdId, e) {
     ${listHtml(prets, '✅ Prêt à emporter', '#6B8C3A')}
     ${listHtml(enCours, '⏳ En préparation', '#D4831A')}
     ${listHtml(servis, '✓ Déjà servi', '#7A6E5F')}
-    <div class="confirm-popup-btns" style="margin-top:16px">
+    ${prets.length > 0 ? `<button class="confirm-popup-ok" style="width:100%;margin-bottom:8px;background:#4CAF7D;font-size:14px;padding:13px"
+      onclick="closeConfirmPopup();confirmerServiTable('${cmdId}')">✓ Confirmer servi (${prets.length} article${prets.length>1?'s':''})</button>` : ''}
+    <div class="confirm-popup-btns" style="margin-top:0">
       <button class="confirm-popup-cancel" onclick="closeConfirmPopup()">Fermer</button>
-      <button class="confirm-popup-ok" onclick="closeConfirmPopup();openModalEditCommande('${cmdId}')">Mise à jour</button>
+      <button class="confirm-popup-cancel" onclick="closeConfirmPopup();openModalEditCommande('${cmdId}')">✏️ Modifier</button>
     </div>`;
   document.getElementById('confirm-popup-overlay').classList.add('active');
 }
@@ -1638,7 +1752,7 @@ function startServiceTimers() {
 // MODAL NOUVELLE COMMANDE — FLUX 4 PHASES
 // ============================================================
 function openModalNewCommande() {
-  STATE.editCommande = { id: null, type: 'sur_place', lignes: [], statut: 'brouillon', couverts: '', vip: false, allergie: '', aperitif: false };
+  STATE.editCommande = { id: null, type: 'sur_place', lignes: [], statut: 'brouillon', couverts: '', vip: false, allergie: '', aperitif: false, zone: '' };
   showModalPhase1();
 }
 
@@ -1648,7 +1762,7 @@ function openModalNewCommandeEmporter() {
 }
 
 function _phaseStepperHtml(active) {
-  const steps = ['Type','Table','Couverts','Catégorie','Articles'];
+  const steps = ['Type','Zone','Table','Couverts','Articles'];
   return '<div class="phase-stepper">' + steps.map((s,i) => {
     const cls = i < active ? 'done' : (i === active ? 'active' : '');
     return `<div class="phase-step ${cls}">${s}</div>`;
@@ -1661,7 +1775,7 @@ function showModalPhase1() {
   document.getElementById('modal-body').innerHTML =
     _phaseStepperHtml(0) +
     `<div class="phase1-btns">
-      <button class="phase1-btn" onclick="STATE.editCommande.type='sur_place';showModalPhase2Tables()">
+      <button class="phase1-btn" onclick="STATE.editCommande.type='sur_place';showModalPhase15Zone()">
         <span class="p1-icon">🪑</span>Sur place
       </button>
       <button class="phase1-btn" onclick="STATE.editCommande.type='emporter';showModalPhase3Couverts()">
@@ -1670,6 +1784,26 @@ function showModalPhase1() {
     </div>`;
   document.getElementById('modal-footer').innerHTML = '';
   openModal();
+}
+
+// Phase 1.5 — sélection de zone
+function showModalPhase15Zone() {
+  const zones = [
+    { nom: 'Salle', icon: '🪑' },
+    { nom: 'Terrasse', icon: '☀️' },
+    { nom: 'Extérieur', icon: '🌿' },
+  ];
+  const tilesHtml = zones.map(z =>
+    `<button class="phase1-btn" onclick="STATE.editCommande.zone='${z.nom}';showModalPhase2Tables()">
+      <span class="p1-icon">${z.icon}</span>${z.nom}
+    </button>`
+  ).join('');
+  document.getElementById('modal-title').textContent = 'Zone';
+  document.getElementById('modal-body').innerHTML =
+    _phaseStepperHtml(1) +
+    `<div class="phase1-btns" style="grid-template-columns:repeat(3,1fr)">${tilesHtml}</div>`;
+  document.getElementById('modal-footer').innerHTML =
+    `<button class="btn btn-secondary" onclick="showModalPhase1()">← Retour</button>`;
 }
 
 // Phase 2 — sélection de table
@@ -1694,10 +1828,10 @@ function showModalPhase2Tables() {
   }
   document.getElementById('modal-title').textContent = 'Sélectionner une table';
   document.getElementById('modal-body').innerHTML =
-    _phaseStepperHtml(1) +
+    _phaseStepperHtml(2) +
     `<div class="phase-tables-grid">${tilesHtml}</div>`;
   document.getElementById('modal-footer').innerHTML =
-    `<button class="btn btn-secondary" onclick="showModalPhase1()">← Retour</button>`;
+    `<button class="btn btn-secondary" onclick="showModalPhase15Zone()">← Retour</button>`;
 }
 
 // Phase 3 — couverts
@@ -1711,7 +1845,7 @@ function showModalPhase3Couverts() {
     ? 'Nouvel emporté'
     : 'Table ' + (STATE.editCommande.table || '');
   document.getElementById('modal-body').innerHTML =
-    _phaseStepperHtml(2) +
+    _phaseStepperHtml(3) +
     `<div style="font-size:13px;color:var(--text-muted);padding:8px 0 4px">Nombre de couverts</div>
     <div class="couverts-grid">${tilesHtml}</div>
     <button class="couvert-tile" style="width:100%;border-radius:10px;margin-top:4px;font-size:14px;font-weight:500;padding:14px;background:rgba(255,255,255,.05);border:1px solid var(--border)"
@@ -1729,11 +1863,11 @@ function askAutreCouverts() {
   }
 }
 
-// Phase 3.5 — allergies + apéritif
-let _phase35State = { allergie: false, selectedAllergies: [], aperitif: false };
+// Phase 3.5 — allergies + apéritif + VIP
+let _phase35State = { allergie: false, selectedAllergies: [], aperitif: false, vip: false };
 
 function showModalPhase35() {
-  _phase35State = { allergie: false, selectedAllergies: [], aperitif: false };
+  _phase35State = { allergie: false, selectedAllergies: [], aperitif: false, vip: false };
   const allergies = ['Gluten','Lactose','Fruits à coque','Crustacés','Autre'];
   const allergyChips = allergies.map(a =>
     `<div class="allergy-chip" id="achip-${a}" onclick="toggleAllergyChip('${a}')">${a}</div>`
@@ -1741,7 +1875,7 @@ function showModalPhase35() {
 
   document.getElementById('modal-title').textContent = 'Avant de commencer…';
   document.getElementById('modal-body').innerHTML =
-    _phaseStepperHtml(2) +
+    _phaseStepperHtml(3) +
     `<div class="phase35-q">
       <div class="phase35-label">🌿 Allergies à signaler ?</div>
       <div class="phase35-btns">
@@ -1757,7 +1891,14 @@ function showModalPhase35() {
       <div class="phase35-label">🥂 Apéritif pour commencer ?</div>
       <div class="phase35-btns">
         <button class="phase35-btn" id="btn-aper-non" onclick="setAperitif(false)">Non / Passer</button>
-        <button class="phase35-btn oui" id="btn-aper-oui" onclick="setAperitif(true)">Oui</button>
+        <button class="phase35-btn oui" id="btn-aper-oui" onclick="setAperitif(true)">Oui →</button>
+      </div>
+    </div>
+    <div class="phase35-q">
+      <div class="phase35-label">⭐ Table VIP ?</div>
+      <div class="phase35-btns">
+        <button class="phase35-btn selected" id="btn-vip-non" onclick="setVip(false)">Non</button>
+        <button class="phase35-btn oui" id="btn-vip-oui" onclick="setVip(true)">Oui — VIP ⭐</button>
       </div>
     </div>`;
   document.getElementById('modal-footer').innerHTML =
@@ -1778,6 +1919,12 @@ function setAperitif(yes) {
   document.getElementById('btn-aper-non').classList.toggle('selected', !yes);
 }
 
+function setVip(yes) {
+  _phase35State.vip = yes;
+  document.getElementById('btn-vip-oui').classList.toggle('selected', yes);
+  document.getElementById('btn-vip-non').classList.toggle('selected', !yes);
+}
+
 function toggleAllergyChip(a) {
   const chips = _phase35State.selectedAllergies;
   const idx = chips.indexOf(a);
@@ -1796,6 +1943,7 @@ function finaliserPhase35() {
     STATE.editCommande.allergie = '';
   }
   STATE.editCommande.aperitif = _phase35State.aperitif;
+  STATE.editCommande.vip = _phase35State.vip;
 
   // Finaliser la commande
   if (STATE.editCommande.type === 'emporter') {
@@ -1808,11 +1956,22 @@ function finaliserPhase35() {
   STATE.editCommande.updatedAt = Date.now();
   STATE.editCommande.source = 'service';
 
-  STATE.editCatFilter = STATE.categories[0] || null;
-  showModalCatPicker(_phase35State.aperitif);
+  if (_phase35State.aperitif) {
+    // Navigation directe vers les Apéritifs
+    const aperCat = STATE.categories.find(c => c === 'Apéritifs')
+      || STATE.categories.find(c => c.toLowerCase().includes('apér'))
+      || STATE.categories[0] || null;
+    STATE.editCatFilter = aperCat;
+    showModalArticles();
+  } else {
+    STATE.editCatFilter = STATE.categories[0] || null;
+    showModalCatPicker(false);
+  }
 }
 
 // Phase 4a — sélection de catégorie (tuiles)
+const CAT_ORDER = ['Entrées','Salades','Pizzas Classiques','Pizzas Gourmandes','Pâtes','Escalopes Italiennes','Viandes Rouges','Poissons & Fruits de Mer','Burgers','Desserts','Glaces','Menu Bambino','Apéritifs','Cocktails Classiques','Cocktails Signature','Mocktails','Bières Pressions','Bières Bouteilles','Vins','Boissons Fraîches','Eaux Minérales','Boissons Chaudes','Suppléments'];
+
 const CAT_GROUPS = [
   { icon: '🥗', label: 'Entrées & Salades',     sub: 'Entrées, Salades',           cats: ['Entrées','Salades'] },
   { icon: '🍕', label: 'Pizzas',                 sub: 'Classiques & Gourmandes',    cats: ['Pizzas Classiques','Pizzas Gourmandes'] },
@@ -1842,7 +2001,7 @@ function showModalCatPicker(aperitifSelected) {
     : 'Table ' + (STATE.editCommande.table || '');
   document.getElementById('modal-title').textContent = label;
   document.getElementById('modal-body').innerHTML =
-    _phaseStepperHtml(3) +
+    _phaseStepperHtml(4) +
     `<div class="cat-picker-grid">${tilesHtml}</div>`;
   document.getElementById('modal-footer').innerHTML =
     `<button class="btn btn-secondary" onclick="showModalPhase35()">← Retour</button>
@@ -1910,11 +2069,38 @@ function showModalArticles() {
   const lignes = getLignes(cmd);
   const total = lignes.reduce((s,l) => s + (parseFloat(l.prix)||0) * (l.qte||1), 0);
 
+  const _orderCounts = computeMenuOrderCounts();
   let articlesHtml = '';
+  // Build groups: items with size suffix → group tile; others → individual tile
+  const _seenBases = new Set();
   const filtered = STATE.menu.filter(m => m.categorie === STATE.editCatFilter);
+  filtered.sort((a, b) => (_orderCounts[b.id] || 0) - (_orderCounts[a.id] || 0));
   filtered.forEach(m => {
     const inactive = !m.actif;
-    // Suppléments : toujours via le picker, pas de contrôle quantité sur la tuile
+    const { base, taille } = _splitBaseAndTaille(m.nom);
+    if (taille) {
+      // Has a size suffix — check if we have multiple variants in this category
+      const variants = filtered.filter(x => {
+        const { base: b2, taille: t2 } = _splitBaseAndTaille(x.nom);
+        return b2 === base && t2;
+      });
+      if (variants.length > 1) {
+        if (_seenBases.has(base)) return; // Already rendered a group tile for this base
+        _seenBases.add(base);
+        const anyInCart = variants.some(v => getQteInPanier(v.id) > 0);
+        const cartCount = variants.reduce((s, v) => s + getQteInPanier(v.id), 0);
+        const qteHtml = anyInCart
+          ? `<div class="art-qte-ctrl" onclick="event.stopPropagation()"><span class="art-qte-val">${cartCount}×</span></div>`
+          : '';
+        const safeKey = base.replace(/[^a-zA-Z0-9]/g, '_');
+        articlesHtml += `<div class="article-btn ${anyInCart ? 'in-cart' : ''}" id="artg-${safeKey}" data-base="${base.replace(/"/g,'&quot;')}" onclick="showContenancePicker('${base.replace(/'/g, "\\'")}')">
+          <span class="art-nom">${base}</span>
+          <div class="art-bottom-row"><span class="art-prix" style="font-size:11px;color:var(--text-muted)">Tailles…</span>${qteHtml}</div>
+        </div>`;
+        return;
+      }
+    }
+    // Single item (no size or unique in category)
     const qte = m.categorie === 'Suppléments' ? 0 : getQteInPanier(m.id);
     articlesHtml += `<div class="article-btn ${inactive ? 'inactive' : ''} ${qte > 0 ? 'in-cart' : ''}"
       id="art-${m.id}"
@@ -1965,6 +2151,7 @@ function showModalArticles() {
 
   document.getElementById('modal-footer').innerHTML = footerBtns.join('');
   openModal();
+  attachCatSwipe();
 }
 
 const BOISSON_CATS = new Set(['Apéritifs','Cocktails Classiques','Cocktails Signature','Mocktails','Bières Pressions','Bières Bouteilles','Vins','Boissons Fraîches','Eaux Minérales','Boissons Chaudes']);
@@ -2130,6 +2317,104 @@ function buildArticleTileInner(m, qte) {
   return `<span class="art-nom">${m.nom}</span><div class="art-bottom-row"><span class="art-prix">${formatPrice(m.prix)}</span>${qteHtml}</div>`;
 }
 
+const SIZE_REGEX = /\s+(\d[\d]*\s*(?:cl|L|btl(?:e)?|½\s*btl(?:e)?))$/i;
+
+function _splitBaseAndTaille(nom) {
+  const m = nom.match(SIZE_REGEX);
+  if (!m) return { base: nom, taille: null };
+  return { base: nom.slice(0, nom.length - m[0].length).trim(), taille: m[1].trim() };
+}
+
+function showContenancePicker(groupKey) {
+  // Find all items whose base name matches groupKey
+  const variants = STATE.menu.filter(m => {
+    const { base } = _splitBaseAndTaille(m.nom);
+    return base === groupKey && m.actif;
+  });
+  if (variants.length === 0) return;
+  // Sort by price
+  variants.sort((a, b) => a.prix - b.prix);
+  document.getElementById('contenance-sheet-title').textContent = groupKey;
+  document.getElementById('contenance-sheet-sub').textContent = variants[0].categorie;
+  document.getElementById('contenance-grid').innerHTML = variants.map(m => {
+    const { taille } = _splitBaseAndTaille(m.nom);
+    return `<div class="contenance-tile" onclick="closeContenanceSheet();addArticleVariant('${m.id}')">
+      <div class="contenance-taille">${taille || m.nom}</div>
+      <div class="contenance-prix">${formatPrice(m.prix)}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('contenance-overlay').classList.add('active');
+}
+
+function closeContenanceSheet() {
+  document.getElementById('contenance-overlay').classList.remove('active');
+}
+
+function addArticleVariant(menuId) {
+  const m = STATE.menu.find(x => x.id === menuId);
+  if (!m || !m.actif) return;
+  _doAddArticle(m, '');
+}
+
+let _optionsM = null;
+let _optionsSelections = {};
+
+function parseOptions(str) {
+  // Format: "Question1:choix1,choix2|Question2:choixA,choixB"
+  if (!str) return [];
+  return str.split('|').map(part => {
+    const [question, choicesStr] = part.split(':');
+    const choices = choicesStr ? choicesStr.split(',').map(s => s.trim()) : [];
+    return { question: question.trim(), choices };
+  }).filter(g => g.choices.length > 0);
+}
+
+function showOptionsPicker(m, optGroups) {
+  _optionsM = m;
+  _optionsSelections = {};
+  document.getElementById('options-picker-title').textContent = m.nom;
+  document.getElementById('options-picker-sub').textContent = m.categorie + ' — ' + formatPrice(m.prix);
+  let bodyHtml = '';
+  optGroups.forEach((g, gi) => {
+    bodyHtml += `<div class="options-group-label">${g.question}</div>
+      <div class="options-chips">${g.choices.map((c, ci) =>
+        `<span class="option-chip" id="optchip-${gi}-${ci}" onclick="toggleOptChip(${gi},'${c.replace(/'/g,"\\'")}',this)">${c}</span>`
+      ).join('')}</div>`;
+  });
+  document.getElementById('options-picker-body').innerHTML = bodyHtml;
+  document.getElementById('options-picker-overlay').classList.add('active');
+}
+
+function toggleOptChip(groupIdx, choix, el) {
+  _optionsSelections[groupIdx] = choix;
+  // Deselect siblings
+  document.querySelectorAll(`[id^="optchip-${groupIdx}-"]`).forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function closeOptionsPicker() {
+  document.getElementById('options-picker-overlay').classList.remove('active');
+  _optionsM = null;
+  _optionsSelections = {};
+}
+
+function confirmOptionsAndAdd() {
+  if (!_optionsM) return;
+  const comment = Object.values(_optionsSelections).filter(Boolean).join(' · ');
+  _doAddArticle(_optionsM, comment);
+  closeOptionsPicker();
+}
+
+function computeMenuOrderCounts() {
+  const counts = {};
+  STATE.commandes.forEach(cmd => {
+    getLignes(cmd).forEach(l => {
+      if (l.menuId) counts[l.menuId] = (counts[l.menuId] || 0) + (l.qte || 1);
+    });
+  });
+  return counts;
+}
+
 function addArticle(menuId) {
   const m = STATE.menu.find(x => x.id === menuId);
   if (!m || !m.actif) return;
@@ -2142,6 +2427,13 @@ function addArticle(menuId) {
       showSupplementPicker(m, platsInPanier);
       return;
     }
+  }
+
+  // Options spécifiques à l'article
+  const opts = parseOptions(m.options || '');
+  if (opts.length > 0) {
+    showOptionsPicker(m, opts);
+    return;
   }
 
   _doAddArticle(m, '');
@@ -2263,6 +2555,22 @@ function refreshPanier() {
     el.className = `article-btn ${m.actif ? '' : 'inactive'} ${qte > 0 ? 'in-cart' : ''}`;
     el.innerHTML = buildArticleTileInner(m, qte);
   });
+  // Rafraîchir les tuiles de groupe (multi-contenances)
+  document.querySelectorAll('[id^="artg-"]').forEach(el => {
+    const base = el.dataset.base;
+    if (!base) return;
+    const variants = STATE.menu.filter(m => {
+      const { base: b } = _splitBaseAndTaille(m.nom);
+      return b === base;
+    });
+    const anyInCart = variants.some(v => getQteInPanier(v.id) > 0);
+    const cartCount = variants.reduce((s, v) => s + getQteInPanier(v.id), 0);
+    el.classList.toggle('in-cart', anyInCart);
+    const qteHtml = anyInCart
+      ? `<div class="art-qte-ctrl" onclick="event.stopPropagation()"><span class="art-qte-val">${cartCount}×</span></div>`
+      : '';
+    el.innerHTML = `<span class="art-nom">${base}</span><div class="art-bottom-row"><span class="art-prix" style="font-size:11px;color:var(--text-muted)">Tailles…</span>${qteHtml}</div>`;
+  });
   // Rafraîchir les résultats de recherche visibles
   document.querySelectorAll('[id^="sart-"]').forEach(el => {
     const menuId = el.id.replace('sart-', '');
@@ -2307,13 +2615,50 @@ function updatePanierTotal() {
 // ============================================================
 // ACTIONS COMMANDE
 // ============================================================
-async function envoyerEnCuisine() {
+function showRecapAvantEnvoi(onConfirm) {
+  const lignes = getLignes(STATE.editCommande);
+  const sorted = [...lignes].sort((a, b) => {
+    const ai = CAT_ORDER.indexOf(a.categorie);
+    const bi = CAT_ORDER.indexOf(b.categorie);
+    return (ai < 0 ? 99 : ai) - (bi < 0 ? 99 : bi);
+  });
+  const total = lignes.reduce((s, l) => s + (parseFloat(l.prix) || 0) * (l.qte || 1), 0);
+  const box = document.getElementById('confirm-popup-box');
+  const itemsHtml = sorted.map(l =>
+    `<div style="display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:13px;font-family:'DM Sans',sans-serif">
+      <span style="color:var(--text)">${l.qte > 1 ? l.qte + '× ' : ''}${l.nom}${l.commentaire ? '<br><span style=\'font-size:11px;color:var(--text-muted)\'>→ ' + l.commentaire + '</span>' : ''}</span>
+      <span style="color:var(--or);white-space:nowrap;margin-left:8px">${formatPrice((l.prix||0)*(l.qte||1))}</span>
+    </div>`
+  ).join('');
+  box.innerHTML = `
+    <div class="confirm-popup-title" style="margin-bottom:12px">📋 Récapitulatif<br><span style="font-size:13px;color:var(--text-muted);font-weight:400">${lignes.length} article${lignes.length > 1 ? 's' : ''} — ${formatPrice(total)}</span></div>
+    <div style="max-height:45vh;overflow-y:auto;margin-bottom:12px">${itemsHtml}</div>
+    <div class="confirm-popup-btns">
+      <button class="confirm-popup-cancel" onclick="closeConfirmPopup()">Annuler</button>
+      <button class="btn btn-primary" style="flex:1;font-size:14px" onclick="closeConfirmPopup();window['${onConfirm}']()">Envoyer ✓</button>
+    </div>`;
+  document.getElementById('confirm-popup-overlay').classList.add('active');
+}
+
+function envoyerEnCuisine() {
+  const lignes = getLignes(STATE.editCommande);
+  if (lignes.length === 0) { showToast('Panier vide', 'error'); return; }
+  showRecapAvantEnvoi('_doEnvoyerEnCuisine');
+}
+
+async function _doEnvoyerEnCuisine() {
   const cmd = STATE.editCommande;
   const lignes = getLignes(cmd);
   if (lignes.length === 0) { showToast('Panier vide', 'error'); return; }
 
   const hasBurger = lignes.some(l => l.categorie && l.categorie.toLowerCase().includes('burger'));
   if (hasBurger) STATE.burgerWarnings.add(cmd.id);
+
+  // Détection pour les popups suggestion
+  const isFirstSend = !STATE.winePopupShown.has(cmd.id);
+  const hasFood = lignes.some(l => !BOISSON_CATS.has(l.categorie));
+  const hasPizza = lignes.some(l => l.categorie && ['Pizzas Classiques','Pizzas Gourmandes'].includes(l.categorie));
+  const hasAperitifBar = lignes.some(l => l.station === 'bar' && l.categorie === 'Apéritifs');
 
   // Optimistic — mise à jour immédiate
   cmd.statut = 'ouverte';
@@ -2326,6 +2671,13 @@ async function envoyerEnCuisine() {
   closeModal();
   renderCurrentView();
   updateNavBadges();
+
+  // File des suggestions
+  _suggQueue = [];
+  if (hasPizza) _suggQueue.push(showSuggPizza);
+  if (hasAperitifBar) _suggQueue.push(showSuggSnacks);
+  if (hasFood && isFirstSend) { STATE.winePopupShown.add(cmd.id); _suggQueue.push(showSuggVin); }
+  if (_suggQueue.length > 0) setTimeout(() => { const fn = _suggQueue.shift(); fn(); }, 450);
 
   // Sync arrière-plan
   enqueueWrite('saveCommande', cmd).catch(() => showToast('⚠ Erreur sync — vérifiez la connexion', 'warning'));
@@ -2359,7 +2711,13 @@ async function encaisser() {
   enqueueWrite('saveCommande', cmd).catch(() => showToast('⚠ Erreur sync encaissement', 'warning'));
 }
 
-async function ajouterLignesCommande() {
+function ajouterLignesCommande() {
+  const lignes = getLignes(STATE.editCommande);
+  if (lignes.length === 0) { showToast('Panier vide', 'error'); return; }
+  showRecapAvantEnvoi('_doAjouterLignesCommande');
+}
+
+async function _doAjouterLignesCommande() {
   const cmd = STATE.editCommande;
   const lignes = getLignes(cmd);
   cmd.updatedAt = Date.now();
@@ -2436,19 +2794,32 @@ function renderStation(station) {
   const now = Date.now();
   const openCommandes = STATE.commandes.filter(c => c.statut === 'ouverte');
 
-  // Filtrer commandes ayant des lignes pour cette station
-  const relevant = openCommandes.filter(c =>
-    getLignes(c).some(l => l.station === station && l.statut !== 'servi')
+  // Toutes les commandes ayant des lignes pour cette station
+  const allRelevant = openCommandes.filter(c =>
+    getLignes(c).some(l => l.station === station)
   );
 
-  if (relevant.length === 0) {
+  if (allRelevant.length === 0) {
     el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)">Aucune commande en cours</div>';
     return;
   }
 
-  // Bandeau BATCH : regrouper les articles en_attente par catégorie puis par nom
-  const batchByCat = {}; // { categorie: { nom: qte } }
-  relevant.forEach(c => {
+  // Catégoriser en 3 groupes
+  const enCours = allRelevant.filter(c =>
+    getLignes(c).some(l => l.station === station && (l.statut === 'en_attente' || l.statut === 'en préparation'))
+  );
+  const pretOnly = allRelevant.filter(c => {
+    const sl = getLignes(c).filter(l => l.station === station);
+    return sl.length > 0 && sl.every(l => l.statut === 'prêt' || l.statut === 'servi') && sl.some(l => l.statut === 'prêt');
+  });
+  const serviOnly = allRelevant.filter(c => {
+    const sl = getLignes(c).filter(l => l.station === station);
+    return sl.length > 0 && sl.every(l => l.statut === 'servi');
+  });
+
+  // Bandeau BATCH — uniquement les articles en_attente des commandes en cours
+  const batchByCat = {};
+  enCours.forEach(c => {
     getLignes(c).filter(l => l.station === station && l.statut === 'en_attente').forEach(l => {
       const cat = l.categorie || '—';
       if (!batchByCat[cat]) batchByCat[cat] = {};
@@ -2471,70 +2842,120 @@ function renderStation(station) {
     </div>`;
   }
 
-  relevant.forEach(c => {
-    const lignes = getLignes(c).filter(l => l.station === station && l.statut !== 'servi');
-    const ref = c.sentAt ? parseInt(c.sentAt) : parseInt(c.createdAt);
-    const elapsed = ref ? now - ref : 0;
-    const headerCls = stationHeaderClass(elapsed);
-    const timerCls = stationTimerClass(elapsed);
+  // Section EN COURS
+  if (enCours.length > 0) {
+    html += `<div class="station-section-sep" style="background:rgba(192,82,42,.15);color:#C0522A">🔥 EN COURS (${enCours.length})</div>`;
+    enCours.forEach(c => { html += renderStationCard(c, station, now, 'en_cours'); });
+  }
 
-    const label = c.type === 'emporter'
-      ? 'Emporté #' + String(c.table).padStart(4,'0')
-      : 'Table ' + c.table;
+  // Section PRÊT
+  if (pretOnly.length > 0) {
+    html += `<div class="station-section-sep" style="background:rgba(76,175,125,.12);color:#4CAF7D">✅ PRÊT — À SERVIR (${pretOnly.length})</div>`;
+    pretOnly.forEach(c => { html += renderStationCard(c, station, now, 'pret'); });
+  }
 
-    const allergie = c.allergie || '';
-
-    const lignesEnAttente = lignes.filter(l => l.statut !== 'prêt');
-    const lignesPret = lignes.filter(l => l.statut === 'prêt');
-    // Séparer prêt récents (<30s) des expirés (>30s)
-    const HIDE_DELAY = 30000;
-    const lignesPretRecent = lignesPret.filter(l => {
-      const t = PRET_TIMES[c.id + '_' + l.id];
-      return t && (now - t) < HIDE_DELAY;
-    });
-    const lignesPretExpires = lignesPret.filter(l => {
-      const t = PRET_TIMES[c.id + '_' + l.id];
-      return !t || (now - t) >= HIDE_DELAY;
-    });
-    const showExpired = SHOW_EXPIRED_PRET.has(c.id);
-
-    let pretSection = '';
-    if (lignesPretRecent.length > 0) {
-      pretSection += `<div class="station-pret-sep">✓ Prêt (${lignesPret.length})</div>`;
-      pretSection += lignesPretRecent.map(l => buildStationLigne(c, l, station)).join('');
-    } else if (lignesPret.length > 0) {
-      pretSection += `<div class="station-pret-sep">✓ Prêt (${lignesPret.length})</div>`;
-    }
-    if (lignesPretExpires.length > 0) {
-      if (showExpired) {
-        pretSection += lignesPretExpires.map(l => buildStationLigne(c, l, station)).join('');
-        pretSection += `<button class="pret-expire-toggle" onclick="toggleShowExpiredPret('${c.id}','${station}')">▲ Masquer les terminés</button>`;
-      } else {
-        pretSection += `<button class="pret-expire-toggle" onclick="toggleShowExpiredPret('${c.id}','${station}')">👁 ${lignesPretExpires.length} plat${lignesPretExpires.length > 1 ? 's' : ''} déjà terminé${lignesPretExpires.length > 1 ? 's' : ''} — voir</button>`;
-      }
-    }
-
-    html += `<div class="station-card">
-      ${allergie ? `<div class="allergie-bandeau">⚠ Allergie : ${allergie}</div>` : ''}
-      <div class="station-card-header ${headerCls}" data-station-header="${c.id}">
-        <strong style="font-size:15px">${label}</strong>
-        ${c.couverts ? `<span style="font-size:12px;opacity:.7;margin-left:4px">${c.couverts} cvt</span>` : ''}
-        ${c.vip ? '<span class="badge badge-vip" style="font-size:10px;margin-left:4px">VIP</span>' : ''}
-        <span class="${timerCls} station-card-timer" data-station-timer="${c.id}">${formatTimer(elapsed)}</span>
-      </div>
-      <div>
-        ${lignesEnAttente.map(l => buildStationLigne(c, l, station)).join('')}
-        ${pretSection}
-      </div>
-      <div style="padding:8px 12px">
-        <button class="btn btn-success" style="padding:8px;font-size:13px;width:100%;background:#5C6B3A"
-          onclick="showConfirmToutPret('${c.id}','${station}')">✓ Tout terminer</button>
-      </div>
-    </div>`;
-  });
+  // Section SERVI
+  if (serviOnly.length > 0) {
+    html += `<div class="station-section-sep" style="background:rgba(139,134,128,.1);color:#8B8680">✓ SERVI (${serviOnly.length})</div>`;
+    serviOnly.forEach(c => { html += renderStationCard(c, station, now, 'servi'); });
+  }
 
   el.innerHTML = html;
   startStationTimers(station);
+}
+
+function renderStationCard(c, station, now, mode) {
+  const lignes = getLignes(c).filter(l => l.station === station);
+  const ref = c.sentAt ? parseInt(c.sentAt) : parseInt(c.createdAt);
+  const elapsed = ref ? now - ref : 0;
+  const headerCls = mode === 'en_cours' ? stationHeaderClass(elapsed) : '';
+  const timerCls = stationTimerClass(elapsed);
+  const label = c.type === 'emporter'
+    ? 'Emporté #' + String(c.table).padStart(4,'0')
+    : 'Table ' + c.table;
+  const allergie = c.allergie || '';
+
+  if (mode === 'servi') {
+    return `<div class="station-card" style="opacity:.45">
+      <div class="station-card-header" style="background:rgba(139,134,128,.2);color:#8B8680">
+        <strong>${label}</strong>
+        ${c.couverts ? `<span style="font-size:12px;opacity:.7;margin-left:4px">${c.couverts} cvt</span>` : ''}
+        <span class="station-card-timer" style="margin-left:auto">${formatTimer(elapsed)}</span>
+      </div>
+      <div style="padding:8px 14px;font-size:12px;color:#8B8680">
+        ${lignes.length} article${lignes.length>1?'s':''} servi${lignes.length>1?'s':''}
+      </div>
+    </div>`;
+  }
+
+  if (mode === 'pret') {
+    const pretLignes = lignes.filter(l => l.statut === 'prêt');
+    const listHtml = pretLignes.map(l =>
+      `<div style="padding:6px 14px;font-size:13px;border-bottom:1px solid rgba(255,255,255,.04);display:flex;align-items:center;gap:6px">
+        <span style="color:#4CAF7D">✓</span>
+        <span>${l.qte||1}× ${l.nom}</span>
+        ${l.commentaire ? `<span style="font-size:11px;color:#7A6E5F;margin-left:4px">— ${l.commentaire}</span>` : ''}
+      </div>`
+    ).join('');
+    return `<div class="station-card" style="border-color:rgba(76,175,125,.4)">
+      ${allergie ? `<div class="allergie-bandeau">⚠ Allergie : ${allergie}</div>` : ''}
+      <div class="station-card-header" style="background:rgba(76,175,125,.18);color:#4CAF7D">
+        <strong style="font-size:15px">${label}</strong>
+        ${c.couverts ? `<span style="font-size:12px;opacity:.7;margin-left:4px">${c.couverts} cvt</span>` : ''}
+        ${c.vip ? '<span class="badge badge-vip" style="font-size:10px;margin-left:4px">VIP</span>' : ''}
+        <span class="station-card-timer" data-station-timer="${c.id}">${formatTimer(elapsed)}</span>
+      </div>
+      ${listHtml}
+    </div>`;
+  }
+
+  // Mode EN COURS
+  const lignesEnAttente = lignes.filter(l => l.statut !== 'prêt' && l.statut !== 'servi');
+  const lignesPret = lignes.filter(l => l.statut === 'prêt');
+  const HIDE_DELAY = 30000;
+  const lignesPretRecent = lignesPret.filter(l => {
+    const t = PRET_TIMES[c.id + '_' + l.id];
+    return t && (now - t) < HIDE_DELAY;
+  });
+  const lignesPretExpires = lignesPret.filter(l => {
+    const t = PRET_TIMES[c.id + '_' + l.id];
+    return !t || (now - t) >= HIDE_DELAY;
+  });
+  const showExpired = SHOW_EXPIRED_PRET.has(c.id);
+
+  let pretSection = '';
+  if (lignesPretRecent.length > 0) {
+    pretSection += `<div class="station-pret-sep">✓ Prêt (${lignesPret.length})</div>`;
+    pretSection += lignesPretRecent.map(l => buildStationLigne(c, l, station)).join('');
+  } else if (lignesPret.length > 0) {
+    pretSection += `<div class="station-pret-sep">✓ Prêt (${lignesPret.length})</div>`;
+  }
+  if (lignesPretExpires.length > 0) {
+    if (showExpired) {
+      pretSection += lignesPretExpires.map(l => buildStationLigne(c, l, station)).join('');
+      pretSection += `<button class="pret-expire-toggle" onclick="toggleShowExpiredPret('${c.id}','${station}')">▲ Masquer les terminés</button>`;
+    } else {
+      pretSection += `<button class="pret-expire-toggle" onclick="toggleShowExpiredPret('${c.id}','${station}')">👁 ${lignesPretExpires.length} plat${lignesPretExpires.length > 1 ? 's' : ''} déjà terminé${lignesPretExpires.length > 1 ? 's' : ''} — voir</button>`;
+    }
+  }
+
+  return `<div class="station-card">
+    ${allergie ? `<div class="allergie-bandeau">⚠ Allergie : ${allergie}</div>` : ''}
+    <div class="station-card-header ${headerCls}" data-station-header="${c.id}">
+      <strong style="font-size:15px">${label}</strong>
+      ${c.couverts ? `<span style="font-size:12px;opacity:.7;margin-left:4px">${c.couverts} cvt</span>` : ''}
+      ${c.vip ? '<span class="badge badge-vip" style="font-size:10px;margin-left:4px">VIP</span>' : ''}
+      <span class="${timerCls}" data-station-timer="${c.id}">${formatTimer(elapsed)}</span>
+    </div>
+    <div>
+      ${lignesEnAttente.map(l => buildStationLigne(c, l, station)).join('')}
+      ${pretSection}
+    </div>
+    <div style="padding:8px 12px">
+      <button class="btn btn-success" style="padding:8px;font-size:13px;width:100%;background:#5C6B3A"
+        onclick="showConfirmToutPret('${c.id}','${station}')">✓ Tout terminer</button>
+    </div>
+  </div>`;
 }
 
 function buildStationLigne(cmd, l, station) {
@@ -2548,7 +2969,7 @@ function buildStationLigne(cmd, l, station) {
 
   return `<div class="station-ligne ${isPret ? 'pret' : ''} ${isRed ? 'blink-red' : ''}"
     data-cmdid="${cmd.id}" data-ligneid="${l.id}"
-    onclick="${isPret ? '' : `marquerPretLigne('${cmd.id}','${l.id}')`}">
+    onclick="${isPret ? '' : `showConfirmPretLigne('${cmd.id}','${l.id}','${nomEsc}','${commentEsc}')`}">
     <div style="flex:1">
       <div style="display:flex;align-items:center;gap:6px">
         <span class="ligne-qte">${l.qte||1}×</span>
@@ -3178,6 +3599,138 @@ function showPinError() {
 }
 
 // ============================================================
+// NAV AUTO-MASQUANTE
+// ============================================================
+let _navHideTimer = null;
+
+function showBottomNav() {
+  const nav = document.querySelector('.nav-bottom');
+  if (nav) nav.classList.remove('nav-hidden');
+  clearTimeout(_navHideTimer);
+  _navHideTimer = setTimeout(hideBottomNav, 5000);
+}
+
+function hideBottomNav() {
+  const nav = document.querySelector('.nav-bottom');
+  if (nav) nav.classList.add('nav-hidden');
+}
+
+function initNavAutoHide() {
+  let _touchStartY = 0;
+  document.addEventListener('touchstart', (e) => {
+    _touchStartY = e.touches[0].clientY;
+    // Touch dans la zone basse (80px du bas) → toujours montrer le nav
+    if (_touchStartY > window.innerHeight - 80) showBottomNav();
+    else { clearTimeout(_navHideTimer); _navHideTimer = setTimeout(hideBottomNav, 5000); }
+  }, { passive: true });
+  document.addEventListener('touchend', (e) => {
+    const endY = e.changedTouches[0].clientY;
+    const deltaY = _touchStartY - endY; // positif = swipe vers le haut
+    if (deltaY > 25 && _touchStartY > window.innerHeight - 200) showBottomNav();
+  }, { passive: true });
+  // Cacher après 4s au démarrage
+  _navHideTimer = setTimeout(hideBottomNav, 4000);
+}
+
+// ============================================================
+// SWIPE CATÉGORIES (modale articles)
+// ============================================================
+function attachCatSwipe() {
+  const body = document.getElementById('modal-body');
+  if (!body) return;
+  let _sx = 0, _sy = 0, _stgt = null;
+  if (body._catSwipeStart) {
+    body.removeEventListener('touchstart', body._catSwipeStart);
+    body.removeEventListener('touchend', body._catSwipeEnd);
+  }
+  body._catSwipeStart = (e) => {
+    _sx = e.touches[0].clientX;
+    _sy = e.touches[0].clientY;
+    _stgt = e.target;
+  };
+  body._catSwipeEnd = (e) => {
+    if (_stgt && _stgt.closest('.cats-scroll')) return; // ne pas confondre avec le scroll des onglets
+    const dx = e.changedTouches[0].clientX - _sx;
+    const dy = e.changedTouches[0].clientY - _sy;
+    if (Math.abs(dx) < 65 || Math.abs(dx) < Math.abs(dy) * 1.2) return;
+    const cats = STATE.categories.filter(c => c !== 'Suppléments');
+    cats.push('Suppléments');
+    const idx = cats.indexOf(STATE.editCatFilter);
+    if (idx < 0) return;
+    if (dx < 0 && idx < cats.length - 1) filterCat(cats[idx + 1]);
+    else if (dx > 0 && idx > 0) filterCat(cats[idx - 1]);
+  };
+  body.addEventListener('touchstart', body._catSwipeStart, { passive: true });
+  body.addEventListener('touchend', body._catSwipeEnd, { passive: true });
+}
+
+// ============================================================
+// POPUPS SUGGESTION (après envoi en cuisine)
+// ============================================================
+let _suggQueue = [];
+
+function _nextSugg() {
+  document.getElementById('confirm-popup-overlay').classList.remove('active');
+  if (_suggQueue.length === 0) return;
+  setTimeout(() => { const fn = _suggQueue.shift(); fn(); }, 220);
+}
+
+function showSuggVin() {
+  const box = document.getElementById('confirm-popup-box');
+  box.innerHTML = `
+    <div class="confirm-popup-title">🍷 Proposer une boisson ?</div>
+    <div class="confirm-popup-detail">La commande est partie en cuisine — bon moment pour proposer vins ou boissons.</div>
+    <div class="confirm-popup-btns" style="margin-top:16px">
+      <button class="confirm-popup-cancel" onclick="_nextSugg()">Déjà fait</button>
+      <button class="confirm-popup-ok" style="background:#5C6B3A" onclick="_nextSugg()">OK 👍</button>
+    </div>`;
+  document.getElementById('confirm-popup-overlay').classList.add('active');
+}
+
+function showSuggSnacks() {
+  const box = document.getElementById('confirm-popup-box');
+  box.innerHTML = `
+    <div class="confirm-popup-title">🍟 Grignotages avec l'apéritif ?</div>
+    <div class="confirm-popup-detail">Proposer pain à l'ail ou amuse-bouches ?</div>
+    <div style="font-size:13px;color:#7A6E5F;margin-bottom:14px">🧊 Pensez aussi aux <strong>glaçons</strong> si besoin.</div>
+    <div class="confirm-popup-btns">
+      <button class="confirm-popup-cancel" onclick="_nextSugg()">Non merci</button>
+      <button class="confirm-popup-ok" style="background:#C9A84C;color:#1A1916" onclick="_nextSugg()">Oui, je propose</button>
+    </div>`;
+  document.getElementById('confirm-popup-overlay').classList.add('active');
+}
+
+function showSuggPizza() {
+  const box = document.getElementById('confirm-popup-box');
+  box.innerHTML = `
+    <div class="confirm-popup-title">🌶 Sauce piquante ?</div>
+    <div class="confirm-popup-detail">Une pizza est en commande — demander si sauce piquante souhaitée ?</div>
+    <div class="confirm-popup-btns" style="margin-top:16px">
+      <button class="confirm-popup-cancel" onclick="_nextSugg()">Non besoin</button>
+      <button class="confirm-popup-ok" style="background:#C0522A" onclick="_nextSugg()">🌶 Je demande</button>
+    </div>`;
+  document.getElementById('confirm-popup-overlay').classList.add('active');
+}
+
+// ============================================================
+// CONFIRMER SERVI (depuis vue Service)
+// ============================================================
+async function confirmerServiTable(cmdId) {
+  const cmd = STATE.commandes.find(c => c.id === cmdId);
+  if (!cmd) return;
+  const lignes = getLignes(cmd);
+  let changed = false;
+  lignes.forEach(l => { if (l.statut === 'prêt') { l.statut = 'servi'; changed = true; } });
+  if (!changed) { showToast('Rien à marquer servi', 'warning'); return; }
+  cmd.updatedAt = Date.now();
+  saveLignes(cmd, lignes);
+  _upsertCommande(JSON.parse(JSON.stringify(cmd)));
+  showToast('Servi ✓', 'success');
+  renderCurrentView();
+  enqueueWrite('saveCommande', cmd).catch(() => showToast('⚠ Erreur sync', 'warning'));
+}
+
+// ============================================================
 // INITIALISATION
 // ============================================================
 async function init() {
@@ -3216,6 +3769,7 @@ async function init() {
   }
 
   await requestWakeLock();
+  initNavAutoHide();
   startPolling();
   renderService();
 }
