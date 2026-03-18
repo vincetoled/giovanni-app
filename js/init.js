@@ -59,11 +59,21 @@ async function init() {
 
     if (configRes.config) {
       const c = configRes.config;
-      if (c.chips_commentaires) STATE.config.chips = c.chips_commentaires;
-      if (c.seuil_orange_commande) STATE.config.seuilOrangeCommande = parseInt(c.seuil_orange_commande);
-      if (c.seuil_rouge_commande) STATE.config.seuilRougeCommande = parseInt(c.seuil_rouge_commande);
-      if (c.seuil_rouge_article) STATE.config.seuilRougeArticle = parseInt(c.seuil_rouge_article);
-      if (c.email_destinataires) STATE.config.email_destinataires = c.email_destinataires;
+      if (c.chips_commentaires)     STATE.config.chips                = c.chips_commentaires;
+      if (c.seuil_orange_commande)  STATE.config.seuilOrangeCommande  = parseInt(c.seuil_orange_commande);
+      if (c.seuil_rouge_commande)   STATE.config.seuilRougeCommande   = parseInt(c.seuil_rouge_commande);
+      if (c.seuil_rouge_article)    STATE.config.seuilRougeArticle    = parseInt(c.seuil_rouge_article);
+      if (c.seuil_orange_article)   STATE.config.seuilOrangeArticle   = parseInt(c.seuil_orange_article);
+      if (c.email_destinataires)    STATE.config.email_destinataires  = c.email_destinataires;
+      if (c.zones_salle)            STATE.config.zones                = c.zones_salle;
+      if (c.nb_couverts_max)        STATE.config.nbCouvertsMax        = parseInt(c.nb_couverts_max);
+      if (c.duree_repas_cible)      STATE.config.dureeRepasCible      = parseInt(c.duree_repas_cible);
+      if (c.tva_taux !== undefined) STATE.config.tva_taux             = parseFloat(c.tva_taux);
+      if (c.ticket_prefix_emporter) STATE.config.ticketPrefixEmporter = String(c.ticket_prefix_emporter);
+      if (c.son_actif !== undefined) STATE.config.sonActif            = c.son_actif === true || c.son_actif === 'true';
+      if (c.nom_restaurant)         STATE.config.nomRestaurant        = String(c.nom_restaurant);
+      if (c.menu_qr_actif !== undefined) STATE.config.menuQrActif     = c.menu_qr_actif === true || c.menu_qr_actif === 'true';
+      if (c.message_bienvenu_qr !== undefined) STATE.config.messageBienvenuQr = String(c.message_bienvenu_qr);
     }
     setOnline(true);
   } catch(e) {

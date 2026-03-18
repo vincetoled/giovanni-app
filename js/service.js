@@ -103,6 +103,16 @@ function renderTableCard(c) {
        </div>`
     : '';
 
+  // Barre de progression repas
+  let progressBar = '';
+  if (c.statut === 'ouverte' && ref && STATE.config.dureeRepasCible > 0) {
+    const pct = Math.min(100, Math.round(elapsed / (STATE.config.dureeRepasCible * 60000) * 100));
+    const pColor = pct >= 100 ? 'var(--terre)' : pct >= 66 ? 'var(--orange,#D4831A)' : 'var(--green,#4CAF7D)';
+    progressBar = `<div style="height:3px;background:rgba(255,255,255,.08);border-radius:2px;margin-top:6px;overflow:hidden">
+      <div style="height:100%;width:${pct}%;background:${pColor};border-radius:2px;transition:width 30s linear"></div>
+    </div>`;
+  }
+
   return `<div class="${cardClass}" onclick="openTableActions('${c.id}')" data-cmdid="${c.id}" data-sentAt="${c.sentAt || c.createdAt}">
     <div style="display:flex;align-items:flex-start;justify-content:space-between">
       <div class="table-num">${c.table}</div>
@@ -113,6 +123,7 @@ function renderTableCard(c) {
       <div class="table-info">${totalItems} article${totalItems > 1 ? 's' : ''}</div>
       ${tStr ? `<div class="table-timer ${tClass}" data-timer="${c.id}">${tStr}</div>` : ''}
     </div>
+    ${progressBar}
     ${burgerBanner}
   </div>`;
 }
@@ -127,8 +138,9 @@ function renderEmporterCard(c) {
   const pretAll = isPretAll(c);
   const totalItems = lignes.reduce((s,l) => s + (l.qte||1), 0);
 
+  const pfx = STATE.config.ticketPrefixEmporter || '#';
   return `<div class="emporter-card" onclick="openTableActions('${c.id}')" data-cmdid="${c.id}" data-sentAt="${c.sentAt||c.createdAt}">
-    <div class="emporter-num">#${String(c.table).padStart(4,'0')}</div>
+    <div class="emporter-num">${pfx}${String(c.table).padStart(4,'0')}</div>
     <div style="font-size:12px;color:var(--text-muted)">${totalItems} article${totalItems>1?'s':''}</div>
     ${pretAll ? '<span class="pret-all-badge">✓ Prêt</span>' : ''}
     ${tStr ? `<div class="table-timer ${tClass}">${tStr}</div>` : ''}
@@ -300,11 +312,9 @@ function showModalPhase1() {
 
 // Phase 1.5 — sélection de zone
 function showModalPhase15Zone() {
-  const zones = [
-    { nom: 'Salle', icon: '🪑' },
-    { nom: 'Terrasse', icon: '☀️' },
-    { nom: 'Extérieur', icon: '🌿' },
-  ];
+  const zones = STATE.config.zones && STATE.config.zones.length
+    ? STATE.config.zones
+    : [{ nom: 'Salle', icon: '🪑' }, { nom: 'Terrasse', icon: '☀️' }, { nom: 'Extérieur', icon: '🌿' }];
   const tilesHtml = zones.map(z =>
     `<button class="phase1-btn" onclick="STATE.editCommande.zone='${z.nom}';showModalPhase2Tables()">
       <span class="p1-icon">${z.icon}</span>${z.nom}
@@ -349,8 +359,9 @@ function showModalPhase2Tables() {
 // Phase 3 — couverts
 function showModalPhase3Couverts() {
   const isEmporter = STATE.editCommande.type === 'emporter';
+  const maxCouverts = STATE.config.nbCouvertsMax || 8;
   let tilesHtml = '';
-  for (let i = 1; i <= 8; i++) {
+  for (let i = 1; i <= maxCouverts; i++) {
     tilesHtml += `<div class="couvert-tile" onclick="STATE.editCommande.couverts='${i}';showModalPhase35()">${i}</div>`;
   }
   document.getElementById('modal-title').textContent = isEmporter

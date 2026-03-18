@@ -144,9 +144,9 @@ function renderAdmin() {
     </div>
 
     <div class="admin-section">
-      <div class="admin-section-title">Seuils chronomètre</div>
+      <div class="admin-section-title">⏱ Seuils chronomètre</div>
       <div class="config-row">
-        <span class="config-label">Alerte orange (min)</span>
+        <span class="config-label">Alerte orange commande (min)</span>
         <input type="number" style="width:70px;text-align:center" id="seuil-orange" value="${STATE.config.seuilOrangeCommande}" onchange="saveSeuil('seuil_orange_commande',this.value)">
       </div>
       <div class="config-row">
@@ -154,13 +154,84 @@ function renderAdmin() {
         <input type="number" style="width:70px;text-align:center" id="seuil-rouge-cmd" value="${STATE.config.seuilRougeCommande}" onchange="saveSeuil('seuil_rouge_commande',this.value)">
       </div>
       <div class="config-row">
-        <span class="config-label">Alerte rouge article (min)</span>
+        <span class="config-label">Alerte orange article cuisine (min)</span>
+        <input type="number" style="width:70px;text-align:center" value="${STATE.config.seuilOrangeArticle}" onchange="saveSeuil('seuil_orange_article',this.value)">
+      </div>
+      <div class="config-row">
+        <span class="config-label">Alerte rouge article cuisine (min)</span>
         <input type="number" style="width:70px;text-align:center" id="seuil-rouge-art" value="${STATE.config.seuilRougeArticle}" onchange="saveSeuil('seuil_rouge_article',this.value)">
       </div>
     </div>
 
     <div class="admin-section">
-      <div class="admin-section-title">Email récap nocturne</div>
+      <div class="admin-section-title">🪑 Salle & Tables</div>
+      <div class="config-row">
+        <span class="config-label">Couverts max par table</span>
+        <input type="number" style="width:70px;text-align:center" value="${STATE.config.nbCouvertsMax}" onchange="saveConfigSimple('nb_couverts_max',parseInt(this.value));STATE.config.nbCouvertsMax=parseInt(this.value)">
+      </div>
+      <div class="config-row">
+        <span class="config-label">Durée repas cible (min)</span>
+        <input type="number" style="width:70px;text-align:center" value="${STATE.config.dureeRepasCible}" onchange="saveConfigSimple('duree_repas_cible',parseInt(this.value));STATE.config.dureeRepasCible=parseInt(this.value)">
+      </div>
+      <div style="margin-top:12px">
+        <div class="config-label" style="margin-bottom:8px">Zones de la salle</div>
+        ${buildZonesConfig()}
+      </div>
+    </div>
+
+    <div class="admin-section">
+      <div class="admin-section-title">📦 Emporter</div>
+      <div class="config-row">
+        <span class="config-label">Préfixe ticket emporté</span>
+        <input type="text" style="width:70px;text-align:center" value="${STATE.config.ticketPrefixEmporter}" maxlength="5" onchange="saveConfigSimple('ticket_prefix_emporter',this.value);STATE.config.ticketPrefixEmporter=this.value">
+      </div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:4px">Ex: "#", "TO-", "EM-" — affiché devant le numéro de ticket</div>
+    </div>
+
+    <div class="admin-section">
+      <div class="admin-section-title">🔔 Sons</div>
+      <div class="config-row">
+        <span class="config-label">Sons activés</span>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" id="chk-son" ${STATE.config.sonActif ? 'checked' : ''} onchange="saveConfigSimple('son_actif',this.checked);STATE.config.sonActif=this.checked"
+            style="width:auto;accent-color:var(--or)">
+          <span style="font-size:13px">${STATE.config.sonActif ? 'Activés' : 'Désactivés'}</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="admin-section">
+      <div class="admin-section-title">📱 Menu QR Client</div>
+      <div class="config-row">
+        <span class="config-label">Commande QR active</span>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" ${STATE.config.menuQrActif ? 'checked' : ''} onchange="saveConfigSimple('menu_qr_actif',this.checked);STATE.config.menuQrActif=this.checked"
+            style="width:auto;accent-color:var(--or)">
+          <span style="font-size:13px">${STATE.config.menuQrActif ? 'Ouverte' : 'Fermée'}</span>
+        </label>
+      </div>
+      <div class="form-group" style="margin-top:12px">
+        <label class="form-label">Message d'accueil (optionnel)</label>
+        <input type="text" id="inp-bienvenu-qr" value="${STATE.config.messageBienvenuQr || ''}" placeholder="Ex: Bienvenue chez Giovanni !">
+      </div>
+      <button class="btn btn-secondary" style="width:100%;margin-top:8px" onclick="saveBienvenuQr()">Enregistrer</button>
+    </div>
+
+    <div class="admin-section">
+      <div class="admin-section-title">🏠 Restaurant</div>
+      <div class="form-group">
+        <label class="form-label">Nom du restaurant</label>
+        <input type="text" id="inp-nom-resto" value="${STATE.config.nomRestaurant || ''}" placeholder="Ex: Ristorante Giovanni">
+      </div>
+      <div class="config-row" style="margin-top:12px">
+        <span class="config-label">Taux TVA (%)</span>
+        <input type="number" style="width:70px;text-align:center" value="${STATE.config.tva_taux}" onchange="saveConfigSimple('tva_taux',parseFloat(this.value));STATE.config.tva_taux=parseFloat(this.value)">
+      </div>
+      <button class="btn btn-secondary" style="width:100%;margin-top:12px" onclick="saveNomRestaurant()">Enregistrer le nom</button>
+    </div>
+
+    <div class="admin-section">
+      <div class="admin-section-title">📧 Email récap nocturne</div>
       <div class="form-group">
         <label class="form-label">Destinataires (un par ligne)</label>
         <textarea id="inp-emails" style="height:80px;resize:none">${(STATE.config.email_destinataires || []).join('\n')}</textarea>
@@ -405,9 +476,78 @@ async function saveSeuil(key, val) {
   const v = parseInt(val);
   if (isNaN(v)) return;
   if (key === 'seuil_orange_commande') STATE.config.seuilOrangeCommande = v;
-  if (key === 'seuil_rouge_commande') STATE.config.seuilRougeCommande = v;
-  if (key === 'seuil_rouge_article') STATE.config.seuilRougeArticle = v;
+  if (key === 'seuil_rouge_commande')  STATE.config.seuilRougeCommande  = v;
+  if (key === 'seuil_rouge_article')   STATE.config.seuilRougeArticle   = v;
+  if (key === 'seuil_orange_article')  STATE.config.seuilOrangeArticle  = v;
   await enqueueWrite('saveConfig', { key, value: v });
+}
+
+// Sauvegarde générique d'une clé config simple (nombre, bool, string)
+async function saveConfigSimple(key, value) {
+  await enqueueWrite('saveConfig', { key, value });
+}
+
+async function saveNomRestaurant() {
+  const val = document.getElementById('inp-nom-resto')?.value.trim();
+  if (!val) return;
+  STATE.config.nomRestaurant = val;
+  await enqueueWrite('saveConfig', { key: 'nom_restaurant', value: val });
+  showToast('Nom enregistré', 'success');
+}
+
+async function saveBienvenuQr() {
+  const val = document.getElementById('inp-bienvenu-qr')?.value || '';
+  STATE.config.messageBienvenuQr = val;
+  await enqueueWrite('saveConfig', { key: 'message_bienvenu_qr', value: val });
+  showToast('Message enregistré', 'success');
+}
+
+// -------- Gestion zones --------
+function buildZonesConfig() {
+  const zones = STATE.config.zones || [];
+  const icons = ['🪑','☀️','🌿','🏠','🌊','🍷','🎪','🌙'];
+  let html = zones.map((z, i) =>
+    `<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+      <input type="text" style="width:32px;text-align:center;padding:6px" value="${z.icon}" maxlength="2"
+        onchange="updateZone(${i},'icon',this.value)">
+      <input type="text" style="flex:1;padding:6px" value="${z.nom}"
+        onchange="updateZone(${i},'nom',this.value)">
+      <button class="btn btn-danger" style="padding:4px 8px;font-size:12px" onclick="deleteZone(${i})">✕</button>
+    </div>`
+  ).join('');
+  html += `<div style="display:flex;gap:8px;margin-top:8px">
+    <input type="text" id="inp-new-zone-icon" style="width:36px;text-align:center;padding:6px" placeholder="🏡" maxlength="2">
+    <input type="text" id="inp-new-zone-nom" style="flex:1;padding:6px" placeholder="Nouvelle zone…">
+    <button class="btn btn-secondary" style="padding:6px 12px" onclick="addZone()">+ Ajouter</button>
+  </div>`;
+  return html;
+}
+
+async function updateZone(idx, field, val) {
+  const zones = [...(STATE.config.zones || [])];
+  if (!zones[idx]) return;
+  zones[idx] = { ...zones[idx], [field]: val };
+  STATE.config.zones = zones;
+  await enqueueWrite('saveConfig', { key: 'zones_salle', value: zones });
+}
+
+async function deleteZone(idx) {
+  const zones = [...(STATE.config.zones || [])];
+  zones.splice(idx, 1);
+  STATE.config.zones = zones;
+  await enqueueWrite('saveConfig', { key: 'zones_salle', value: zones });
+  renderAdmin();
+}
+
+async function addZone() {
+  const icon = document.getElementById('inp-new-zone-icon')?.value.trim() || '📍';
+  const nom  = document.getElementById('inp-new-zone-nom')?.value.trim();
+  if (!nom) return;
+  const zones = [...(STATE.config.zones || [])];
+  zones.push({ nom, icon });
+  STATE.config.zones = zones;
+  await enqueueWrite('saveConfig', { key: 'zones_salle', value: zones });
+  renderAdmin();
 }
 
 async function saveEmails() {

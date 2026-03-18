@@ -27,8 +27,8 @@ function formatTimer(ms) {
 
 function timerClass(ms, isArticle) {
   const min = ms / 60000;
-  const orange = isArticle ? STATE.config.seuilOrangeCommande : STATE.config.seuilOrangeCommande;
-  const red = isArticle ? STATE.config.seuilRougeArticle : STATE.config.seuilRougeCommande;
+  const orange = isArticle ? STATE.config.seuilOrangeArticle  : STATE.config.seuilOrangeCommande;
+  const red    = isArticle ? STATE.config.seuilRougeArticle   : STATE.config.seuilRougeCommande;
   if (min >= red) return 'red';
   if (min >= orange) return 'orange';
   return 'green';
