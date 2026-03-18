@@ -34,21 +34,20 @@ function renderService() {
     });
   }
 
-  // Tables sur place
-  html += '<div class="section-title">Tables</div>';
-  html += '<div class="tables-grid">';
+  // Tables sur place — groupées par zone
+  html += `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+    <div class="section-title" style="margin:0">Tables</div>
+    <button class="btn-new-table" style="border-radius:20px;aspect-ratio:unset;padding:6px 14px;font-size:12px;min-width:unset" onclick="openModalNewCommande()">+ Nouvelle table</button>
+  </div>`;
 
-  // Bouton nouvelle table
-  html += `<button class="btn-new-table" onclick="openModalNewCommande()">
-    <span class="plus">+</span>
-    <span>Nouvelle table</span>
-  </button>`;
-
-  surPlace.forEach(c => {
-    html += renderTableCard(c);
+  Object.entries(TABLE_ZONES).forEach(([zoneName, tableIds]) => {
+    const zoneCards = surPlace.filter(c => tableIds.includes(String(c.table)));
+    if (zoneCards.length === 0) return;
+    html += `<div class="section-subtitle">${zoneName}</div>`;
+    html += '<div class="tables-grid">';
+    zoneCards.forEach(c => { html += renderTableCard(c); });
+    html += '</div>';
   });
-
-  html += '</div>';
 
   // Emporter
   if (emporter.length > 0 || true) {
@@ -82,10 +81,10 @@ function renderTableCard(c) {
   const isBrouillon = c.statut === 'brouillon';
 
   let badges = '';
-  if (c.vip) badges += '<span class="badge badge-vip">⭐ VIP</span>';
-  if (isBrouillon) badges += '<span class="badge badge-brouillon">Brouillon</span>';
-  if (pretAll) badges += `<span class="pret-all-badge pret-all-badge-clickable" onclick="event.stopPropagation();showPretDetail('${c.id}',event)">✓ Tout prêt</span>`;
-  if (pretPartial) badges += `<span class="pret-partial-badge" onclick="event.stopPropagation();showPretDetail('${c.id}',event)">◑ En partie prêt</span>`;
+  if (c.vip) badges += '<span class="badge badge-vip">⭐</span>';
+  if (isBrouillon) badges += '<span class="badge badge-brouillon">…</span>';
+  if (pretAll) badges += `<span class="pret-all-badge pret-all-badge-clickable" onclick="event.stopPropagation();showPretDetail('${c.id}',event)">✓</span>`;
+  if (pretPartial) badges += `<span class="pret-partial-badge" onclick="event.stopPropagation();showPretDetail('${c.id}',event)">◑</span>`;
   if (c.zone) badges += `<span class="badge" style="background:rgba(107,140,58,.15);color:#6B8C3A;border-color:rgba(107,140,58,.3)">${c.zone}</span>`;
 
   let cardClass = 'table-card';
@@ -114,17 +113,10 @@ function renderTableCard(c) {
   }
 
   return `<div class="${cardClass}" onclick="openTableActions('${c.id}')" data-cmdid="${c.id}" data-sentAt="${c.sentAt || c.createdAt}">
-    <div style="display:flex;align-items:flex-start;justify-content:space-between">
-      <div class="table-num">${c.table}</div>
-      ${c.couverts ? `<div class="table-info">👥 ${c.couverts}</div>` : ''}
-    </div>
+    ${c.couverts ? `<div class="table-couverts">👥 ${c.couverts}</div>` : ''}
+    <div class="table-num">${c.table}</div>
+    ${tStr ? `<div class="table-timer ${tClass}" data-timer="${c.id}">${tStr}</div>` : ''}
     ${badges ? '<div class="table-badges">' + badges + '</div>' : ''}
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto">
-      <div class="table-info">${totalItems} article${totalItems > 1 ? 's' : ''}</div>
-      ${tStr ? `<div class="table-timer ${tClass}" data-timer="${c.id}">${tStr}</div>` : ''}
-    </div>
-    ${progressBar}
-    ${burgerBanner}
   </div>`;
 }
 
@@ -330,25 +322,26 @@ function showModalPhase15Zone() {
 
 // Phase 2 — sélection de table
 function showModalPhase2Tables() {
-  const maxTables = parseInt(STATE.config.nbTables || 20);
+  const zone = STATE.editCommande.zone || 'Salle';
+  const tableList = TABLE_ZONES[zone] || [];
   let tilesHtml = '';
-  for (let i = 1; i <= maxTables; i++) {
+  tableList.forEach(tNum => {
     const existing = STATE.commandes.find(c =>
-      (c.statut === 'ouverte' || c.statut === 'brouillon') && String(c.table) === String(i)
+      (c.statut === 'ouverte' || c.statut === 'brouillon') && String(c.table) === String(tNum)
     );
     if (existing) {
       const ref = existing.sentAt ? parseInt(existing.sentAt) : parseInt(existing.createdAt);
       const elapsed = ref ? Date.now() - ref : 0;
       tilesHtml += `<div class="phase-table-tile occupee" onclick="openModalEditCommande('${existing.id}');closeModal()">
-        ${i}<div class="tile-sub">${formatTimer(elapsed)}</div>
+        ${tNum}<div class="tile-sub">${formatTimer(elapsed)}</div>
       </div>`;
     } else {
-      tilesHtml += `<div class="phase-table-tile libre" onclick="STATE.editCommande.table='${i}';showModalPhase3Couverts()">
-        ${i}<div class="tile-sub">Libre</div>
+      tilesHtml += `<div class="phase-table-tile libre" onclick="STATE.editCommande.table='${tNum}';showModalPhase3Couverts()">
+        ${tNum}<div class="tile-sub">Libre</div>
       </div>`;
     }
-  }
-  document.getElementById('modal-title').textContent = 'Sélectionner une table';
+  });
+  document.getElementById('modal-title').textContent = `Sélectionner une table — ${zone}`;
   document.getElementById('modal-body').innerHTML =
     _phaseStepperHtml(2) +
     `<div class="phase-tables-grid">${tilesHtml}</div>`;
@@ -664,6 +657,12 @@ function showModalArticles() {
   });
 }
 
+const TABLE_ZONES = {
+  'Salle':     ['1','2','3','4','5','6','7','8'],
+  'Terrasse':  ['T1','T2','T3','T4','T5','T6','T7','T8','T9','T10','T11','T12'],
+  'Extérieur': ['E1','E2','E3','E4','E5','E6'],
+};
+
 const BOISSON_CATS = new Set(['Apéritifs','Cocktails Classiques','Cocktails Signature','Mocktails','Bières Pressions','Bières Bouteilles','Vins','Boissons Fraîches','Eaux Minérales','Boissons Chaudes']);
 const CHIPS_ACCOM  = ['Pâtes','Frites','Salade','Légumes'];
 const CHIPS_CUISSON = ['Bien cuit','Saignant'];
@@ -696,12 +695,14 @@ function buildLigneHtml(l, isDone) {
 
   return `<div class="panier-ligne${isDone ? ' pret-done' : ''}" id="ligne-${l.id}">
     <div class="panier-ligne-header" onclick="toggleLigneDetail('${l.id}')">
-      ${statutBadge}<span class="panier-nom">${(l.qte||1) > 1 ? (l.qte||1)+'× ' : ''}${l.nom}${suppLink}${commentIndicator}</span>
-      <span class="panier-prix">${formatPrice((l.prix||0) * (l.qte||1))}</span>
-      <div class="qte-ctrl" onclick="event.stopPropagation()">
-        <button class="qte-btn" onclick="updateQte('${l.id}',-1)">−</button>
-        <span class="qte-val">${l.qte||1}</span>
-        <button class="qte-btn" onclick="updateQte('${l.id}',1)">+</button>
+      ${statutBadge}<span class="panier-nom">${l.nom}${suppLink}${commentIndicator}</span>
+      <div class="panier-right-ctrl" onclick="event.stopPropagation()">
+        <div class="qte-ctrl">
+          <button class="qte-btn" onclick="updateQte('${l.id}',-1)">−</button>
+          <span class="qte-val">${l.qte||1}</span>
+          <button class="qte-btn" onclick="updateQte('${l.id}',1)">+</button>
+        </div>
+        <span class="panier-prix">${formatPrice((l.prix||0) * (l.qte||1))}</span>
       </div>
       <button class="chip-del" onclick="event.stopPropagation();confirmRemoveLigne('${l.id}')">✕</button>
       <span class="panier-ligne-toggle">›</span>
@@ -866,13 +867,7 @@ function searchArticles(query) {
   box.style.display = 'block';
   box.innerHTML = '<div class="search-results">' + results.map(m => {
     const qte = getQteInPanier(m.id);
-    const qteHtml = qte > 0
-      ? `<div class="search-result-qte" onclick="event.stopPropagation()">
-          <button class="art-qte-btn" onclick="decrementArticle('${m.id}')">−</button>
-          <span class="art-qte-val">${qte}</span>
-          <button class="art-qte-btn" onclick="addArticle('${m.id}')">+</button>
-         </div>`
-      : '';
+    const qteHtml = qte > 0 ? `<span class="art-qte-badge">${qte}</span>` : '';
     return `<div class="search-result-item ${qte > 0 ? 'in-cart' : ''}" id="sart-${m.id}" onclick="addArticle('${m.id}')">
       <div class="search-result-info">
         <div class="search-result-nom">${m.nom}</div>
@@ -936,11 +931,7 @@ function getQteInPanier(menuId) {
 
 function buildArticleTileInner(m, qte) {
   const qteHtml = qte > 0
-    ? `<div class="art-qte-ctrl" onclick="event.stopPropagation()">
-        <button class="art-qte-btn" onclick="decrementArticle('${m.id}')">−</button>
-        <span class="art-qte-val">${qte}</span>
-        <button class="art-qte-btn" onclick="addArticle('${m.id}')">+</button>
-       </div>`
+    ? `<span class="art-qte-badge">${qte}</span>`
     : '';
   return `<span class="art-nom">${m.nom}</span><div class="art-bottom-row"><span class="art-prix">${formatPrice(m.prix)}</span>${qteHtml}</div>`;
 }
@@ -1149,13 +1140,6 @@ function _doAddArticle(m, commentaire) {
   }
   saveLignes(STATE.editCommande, lignes);
   refreshPanier();
-  // Auto-expand le détail pour accès rapide aux chips/commentaire
-  if (targetId) {
-    const el = document.getElementById('ligne-' + targetId);
-    if (el && !el.classList.contains('expanded')) el.classList.add('expanded');
-    // Scroll vers la ligne dans le panier
-    el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  }
 }
 
 function decrementArticle(menuId) {
@@ -1264,13 +1248,7 @@ function refreshPanier() {
     if (!m) return;
     const qte = getQteInPanier(menuId);
     el.className = `search-result-item ${qte > 0 ? 'in-cart' : ''}`;
-    const qteHtml = qte > 0
-      ? `<div class="search-result-qte" onclick="event.stopPropagation()">
-          <button class="art-qte-btn" onclick="decrementArticle('${menuId}')">−</button>
-          <span class="art-qte-val">${qte}</span>
-          <button class="art-qte-btn" onclick="addArticle('${menuId}')">+</button>
-         </div>`
-      : '';
+    const qteHtml = qte > 0 ? `<span class="art-qte-badge">${qte}</span>` : '';
     const prixEl = el.querySelector('.search-result-prix');
     const prix = prixEl ? prixEl.outerHTML : `<div class="search-result-prix">${formatPrice(m.prix)}</div>`;
     const infoEl = el.querySelector('.search-result-info');
