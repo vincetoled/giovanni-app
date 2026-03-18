@@ -2,40 +2,42 @@
    VUE SERVICE — GRILLE TABLES
    ============================================================ */
 .tables-grid{
-  display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
-  gap:10px;
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));
+  gap:14px;
 }
 .table-card{
-  background:var(--bg-card);border:1px solid var(--border);
-  border-radius:var(--radius);padding:12px;
+  background:var(--bg-card);border:2px solid var(--border);
+  border-radius:50%;aspect-ratio:1;
+  padding:10px;
   cursor:pointer;position:relative;
-  transition:border-color .2s,transform .1s;
-  min-height:90px;
-  display:flex;flex-direction:column;gap:6px;
+  transition:border-color .2s,transform .1s,box-shadow .2s;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;gap:3px;overflow:hidden;
 }
-.table-card:active{transform:scale(.97)}
-.table-card.has-order{border-color:rgba(201,168,76,.4)}
-.table-card.pret-all{border-color:var(--green)}
+.table-card:active{transform:scale(.95)}
+.table-card.has-order{border-color:rgba(201,168,76,.5);box-shadow:0 0 0 2px rgba(201,168,76,.1)}
+.table-card.pret-all{border-color:var(--green);box-shadow:0 0 0 2px rgba(76,175,125,.15)}
 .table-card.has-client-demand{border-color:var(--orange);animation:pulse-orange 1.5s ease-in-out infinite}
 .table-card.locked::after{
-  content:'✏️';position:absolute;top:6px;right:8px;font-size:12px;
+  content:'✏️';position:absolute;top:6px;right:6px;font-size:10px;
 }
-.table-num{font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:600;color:var(--or);line-height:1}
-.table-info{font-size:12px;color:var(--text-muted)}
-.table-badges{display:flex;flex-wrap:wrap;gap:4px;margin-top:auto}
-.table-timer{font-size:13px;font-weight:700}
+.table-num{font-family:'Cormorant Garamond',serif;font-size:40px;font-weight:600;color:var(--or);line-height:1}
+.table-couverts{font-size:11px;color:var(--text-muted)}
+.table-info{font-size:11px;color:var(--text-muted)}
+.table-badges{display:flex;flex-wrap:wrap;gap:2px;justify-content:center}
+.table-timer{font-size:13px;font-weight:700;letter-spacing:.3px}
 .table-timer.green{color:var(--green)}
 .table-timer.orange{color:var(--orange)}
 .table-timer.red{color:var(--red)}
 .btn-new-table{
-  background:rgba(201,168,76,.1);border:1px dashed var(--border-active);
-  border-radius:var(--radius);padding:12px;
+  background:rgba(201,168,76,.08);border:1px dashed var(--border-active);
+  border-radius:50%;aspect-ratio:1;
   cursor:pointer;color:var(--or);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
-  min-height:90px;font-size:13px;transition:background .2s;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  font-size:11px;transition:background .2s;
 }
 .btn-new-table:active{background:rgba(201,168,76,.2)}
-.btn-new-table .plus{font-size:28px;line-height:1}
+.btn-new-table .plus{font-size:26px;line-height:1}
 
 /* ============================================================
    MODAL COMMANDE — SAISIE ARTICLES
@@ -81,18 +83,19 @@
 .article-btn .art-prix{font-size:14px;color:var(--or);font-weight:700;white-space:nowrap}
 .art-bottom-row{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:nowrap;width:100%;min-width:0}
 .art-qte-ctrl{display:flex;align-items:center;justify-content:center;gap:4px;flex-shrink:0}
-.art-qte-btn{
-  width:24px;height:24px;border-radius:50%;
-  background:rgba(201,168,76,.2);border:1px solid rgba(201,168,76,.35);
-  color:var(--or);font-size:15px;font-weight:700;line-height:1;
-  display:flex;align-items:center;justify-content:center;
-  font-family:'DM Sans',sans-serif;cursor:pointer;flex-shrink:0;
-}
-.art-qte-btn:active{background:rgba(201,168,76,.4)}
 .art-qte-val{
   font-size:15px;font-weight:700;color:var(--or);
   min-width:18px;text-align:center;
   font-family:'DM Mono',monospace;
+}
+.art-qte-badge{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:20px;height:20px;padding:0 5px;
+  border-radius:10px;
+  background:var(--or);color:#1A1916;
+  font-size:12px;font-weight:700;
+  font-family:'DM Mono',monospace;
+  flex-shrink:0;
 }
 .search-result-qte{display:flex;align-items:center;gap:5px;flex-shrink:0}
 
@@ -106,8 +109,9 @@
   border-radius:var(--radius-sm);padding:12px;margin-bottom:8px;
 }
 .panier-ligne-top{display:flex;align-items:center;gap:8px}
-.panier-nom{flex:1;font-size:14px;font-weight:600;line-height:1.3}
-.panier-prix{font-size:14px;color:var(--or);font-weight:700;white-space:nowrap}
+.panier-nom{flex:1;font-size:14px;font-weight:600;line-height:1.3;min-width:0;margin-right:8px}
+.panier-right-ctrl{display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0}
+.panier-prix{font-size:12px;color:var(--or);font-weight:700;white-space:nowrap}
 .qte-ctrl{display:flex;align-items:center;gap:6px}
 .qte-btn{
   width:36px;height:36px;border-radius:50%;
