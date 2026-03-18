@@ -717,6 +717,32 @@ async function init() {
       : 'Menu — Scannez un QR code de table';
   }
 
+  // Charger la config du restaurant
+  try {
+    const cfgRes = await apiGet('getConfig');
+    if (cfgRes.config) {
+      const c = cfgRes.config;
+      if (c.nom_restaurant) {
+        const h1 = document.querySelector('.resto-name');
+        if (h1) h1.textContent = c.nom_restaurant;
+      }
+      if (c.menu_qr_actif === false || c.menu_qr_actif === 'false') {
+        document.getElementById('menu-content').innerHTML =
+          '<div class="empty-state"><div class="icon">🔒</div>La commande en ligne est temporairement désactivée.<br>Votre serveur prend votre commande.</div>';
+        return;
+      }
+      if (c.message_bienvenu_qr) {
+        const hdr = document.querySelector('.menu-header');
+        if (hdr) {
+          const msg = document.createElement('div');
+          msg.style.cssText = 'font-size:13px;color:var(--or);margin-top:6px;font-style:italic';
+          msg.textContent = c.message_bienvenu_qr;
+          hdr.appendChild(msg);
+        }
+      }
+    }
+  } catch(e) { /* config non critique, continuer */ }
+
   await chargerMenu();
 
   // Afficher les demandes précédentes si existantes
