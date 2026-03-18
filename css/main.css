@@ -158,6 +158,10 @@ h1,h2,h3{font-family:'Cormorant Garamond',serif;font-weight:600}
   font-family:'Cormorant Garamond',serif;font-size:16px;color:var(--or);
   padding:12px 0 8px;letter-spacing:.5px;
 }
+.section-subtitle{
+  font-size:11px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;
+  color:var(--text-muted);padding:8px 0 4px;
+}
 
 /* ============================================================
    MODAL
