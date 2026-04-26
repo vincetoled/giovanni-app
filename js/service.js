@@ -620,7 +620,7 @@ function showModalArticles() {
   document.getElementById('modal-body').innerHTML = `
     <div class="article-search">
       <span class="search-icon">🔍</span>
-      <input type="search" placeholder="Rechercher un article… (3 lettres min)"
+      <input type="search" placeholder="Rechercher un article…"
         oninput="searchArticles(this.value)" autocomplete="off">
     </div>
     <div id="search-results-box"></div>
@@ -856,7 +856,7 @@ function searchArticles(query) {
     document.querySelector('.articles-grid').style.display = '';
     return;
   }
-  const results = STATE.menu.filter(m => m.actif && _normalizeStr(m.nom).includes(q)).slice(0, 15);
+  const results = STATE.menu.filter(m => m.actif && _normalizeStr(m.nom).includes(q));
   document.querySelector('.cats-scroll').style.display = 'none';
   document.querySelector('.articles-grid').style.display = 'none';
   if (results.length === 0) {
@@ -894,7 +894,7 @@ function searchServiceArticles(query) {
     return;
   }
   // Inclut les articles en rupture (actif=false) pour permettre de voir leur statut
-  const results = STATE.menu.filter(m => _normalizeStr(m.nom).includes(q)).slice(0, 12);
+  const results = STATE.menu.filter(m => _normalizeStr(m.nom).includes(q));
   box.style.display = 'block';
   if (results.length === 0) {
     box.innerHTML = '<div style="padding:12px;text-align:center;color:var(--text-muted);font-size:13px">Aucun résultat</div>';
